@@ -1,0 +1,455 @@
+-- Tạo cơ sở dữ liệu 1
+CREATE DATABASE eye_recognition_db;
+
+-- Kết nối đến CSDL vừa tạo
+\c eye_recognition_db;
+-- Tạo cơ sở dữ liệu 1
+CREATE DATABASE eye_recognition_db;
+
+-- Kết nối đến CSDL vừa tạo
+\c eye_recognition_db;
+
+-- Tạo bảng tblEyeRecognitionModel (bảng bên trái trong Hình 1)
+CREATE TABLE tblEyeRecognitionModel (
+    id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    eyeModelName varchar(100) NOT NULL,
+    modelLink varchar(255) NOT NULL,
+    accuracy float NOT NULL,
+    imageSize integer NOT NULL,
+    epochs integer NOT NULL,
+    learningRate float NOT NULL,
+    batchSize integer NOT NULL,
+    mappingLabel Text NOT NULL,
+    isActive boolean DEFAULT true,
+    trainingTime integer,
+    createDate timestamp DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tạo bảng tblEyeRecognitionSample (bảng bên phải trên trong Hình 1)
+CREATE TABLE tblEyeRecognitionSample (
+    id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    memberId integer NOT NULL,
+    eyeImageLink varchar(255) NOT NULL,
+    label integer NOT NULL,
+    isActive boolean DEFAULT true,
+    captureDate timestamp DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tạo bảng tblEyeRecognitionSampleHistory (thay đổi từ tblEyeRecognitionSampleTrain trong Hình 1)
+CREATE TABLE tblEyeRecognitionSampleHistory (
+    id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    notes varchar(255) NOT NULL,
+    tblEyeRecognitionSampleId integer NOT NULL,
+    tblRecognitionModelId integer NOT NULL
+);
+
+-- Tạo khóa ngoại
+ALTER TABLE tblEyeRecognitionSampleHistory 
+    ADD CONSTRAINT fk_sample_id 
+    FOREIGN KEY (tblEyeRecognitionSampleId) 
+    REFERENCES tblEyeRecognitionSample(id);
+
+ALTER TABLE tblEyeRecognitionSampleHistory 
+    ADD CONSTRAINT fk_recognition_model_id 
+    FOREIGN KEY (tblRecognitionModelId) 
+    REFERENCES tblEyeRecognitionModel(id);
+
+-- Nhân viên ID 1
+INSERT INTO tblEyeRecognitionSample (memberId, eyeImageLink, label, isActive) VALUES
+(1, 'statics/samples/1/001_1_1.jpg', 1, true),
+(1, 'statics/samples/1/001_1_2.jpg', 1, true),
+(1, 'statics/samples/1/001_1_3.jpg', 1, true),
+(1, 'statics/samples/1/001_2_1.jpg', 1, true),
+(1, 'statics/samples/1/001_2_2.jpg', 1, true),
+(1, 'statics/samples/1/001_2_3.jpg', 1, true),
+(1, 'statics/samples/1/001_2_4.jpg', 1, true);
+
+-- Nhân viên ID 2
+INSERT INTO tblEyeRecognitionSample (memberId, eyeImageLink, label, isActive) VALUES
+(2, 'statics/samples/2/002_1_1.jpg', 2, true),
+(2, 'statics/samples/2/002_1_2.jpg', 2, true),
+(2, 'statics/samples/2/002_1_3.jpg', 2, true),
+(2, 'statics/samples/2/002_2_1.jpg', 2, true),
+(2, 'statics/samples/2/002_2_2.jpg', 2, true),
+(2, 'statics/samples/2/002_2_3.jpg', 2, true),
+(2, 'statics/samples/2/002_2_4.jpg', 2, true);
+
+-- Nhân viên ID 3
+INSERT INTO tblEyeRecognitionSample (memberId, eyeImageLink, label, isActive) VALUES
+(3, 'statics/samples/3/003_1_1.jpg', 3, true),
+(3, 'statics/samples/3/003_1_2.jpg', 3, true),
+(3, 'statics/samples/3/003_1_3.jpg', 3, true),
+(3, 'statics/samples/3/003_2_1.jpg', 3, true),
+(3, 'statics/samples/3/003_2_2.jpg', 3, true),
+(3, 'statics/samples/3/003_2_3.jpg', 3, true),
+(3, 'statics/samples/3/003_2_4.jpg', 3, true);
+
+-- Nhân viên ID 4
+INSERT INTO tblEyeRecognitionSample (memberId, eyeImageLink, label, isActive) VALUES
+(4, 'statics/samples/4/004_1_1.jpg', 4, true),
+(4, 'statics/samples/4/004_1_2.jpg', 4, true),
+(4, 'statics/samples/4/004_1_3.jpg', 4, true),
+(4, 'statics/samples/4/004_2_1.jpg', 4, true),
+(4, 'statics/samples/4/004_2_2.jpg', 4, true),
+(4, 'statics/samples/4/004_2_3.jpg', 4, true),
+(4, 'statics/samples/4/004_2_4.jpg', 4, true);
+
+-- Nhân viên ID 5
+INSERT INTO tblEyeRecognitionSample (memberId, eyeImageLink, label, isActive) VALUES
+(5, 'statics/samples/5/005_1_1.jpg', 5, true),
+(5, 'statics/samples/5/005_1_2.jpg', 5, true),
+(5, 'statics/samples/5/005_1_3.jpg', 5, true),
+(5, 'statics/samples/5/005_2_1.jpg', 5, true),
+(5, 'statics/samples/5/005_2_2.jpg', 5, true),
+(5, 'statics/samples/5/005_2_3.jpg', 5, true),
+(5, 'statics/samples/5/005_2_4.jpg', 5, true);
+
+-- Nhân viên ID 6
+INSERT INTO tblEyeRecognitionSample (memberId, eyeImageLink, label, isActive) VALUES
+(6, 'statics/samples/6/006_1_1.jpg', 6, true),
+(6, 'statics/samples/6/006_1_2.jpg', 6, true),
+(6, 'statics/samples/6/006_1_3.jpg', 6, true),
+(6, 'statics/samples/6/006_2_1.jpg', 6, true),
+(6, 'statics/samples/6/006_2_2.jpg', 6, true),
+(6, 'statics/samples/6/006_2_3.jpg', 6, true),
+(6, 'statics/samples/6/006_2_4.jpg', 6, true);
+
+-- Nhân viên ID 7
+INSERT INTO tblEyeRecognitionSample (memberId, eyeImageLink, label, isActive) VALUES
+(7, 'statics/samples/7/007_1_1.jpg', 7, true),
+(7, 'statics/samples/7/007_1_2.jpg', 7, true),
+(7, 'statics/samples/7/007_1_3.jpg', 7, true),
+(7, 'statics/samples/7/007_2_1.jpg', 7, true),
+(7, 'statics/samples/7/007_2_2.jpg', 7, true),
+(7, 'statics/samples/7/007_2_3.jpg', 7, true),
+(7, 'statics/samples/7/007_2_4.jpg', 7, true);
+
+-- Nhân viên ID 8
+INSERT INTO tblEyeRecognitionSample (memberId, eyeImageLink, label, isActive) VALUES
+(8, 'statics/samples/8/008_1_1.jpg', 8, true),
+(8, 'statics/samples/8/008_1_2.jpg', 8, true),
+(8, 'statics/samples/8/008_1_3.jpg', 8, true),
+(8, 'statics/samples/8/008_2_1.jpg', 8, true),
+(8, 'statics/samples/8/008_2_2.jpg', 8, true),
+(8, 'statics/samples/8/008_2_3.jpg', 8, true),
+(8, 'statics/samples/8/008_2_4.jpg', 8, true);
+
+-- Nhân viên ID 9
+INSERT INTO tblEyeRecognitionSample (memberId, eyeImageLink, label, isActive) VALUES
+(9, 'statics/samples/9/009_1_1.jpg', 9, true),
+(9, 'statics/samples/9/009_1_2.jpg', 9, true),
+(9, 'statics/samples/9/009_1_3.jpg', 9, true),
+(9, 'statics/samples/9/009_2_1.jpg', 9, true),
+(9, 'statics/samples/9/009_2_2.jpg', 9, true),
+(9, 'statics/samples/9/009_2_3.jpg', 9, true),
+(9, 'statics/samples/9/009_2_4.jpg', 9, true);
+
+-- Nhân viên ID 10
+INSERT INTO tblEyeRecognitionSample (memberId, eyeImageLink, label, isActive) VALUES
+(10, 'statics/samples/10/010_1_1.jpg', 10, true),
+(10, 'statics/samples/10/010_1_2.jpg', 10, true),
+(10, 'statics/samples/10/010_1_3.jpg', 10, true),
+(10, 'statics/samples/10/010_2_1.jpg', 10, true),
+(10, 'statics/samples/10/010_2_2.jpg', 10, true),
+(10, 'statics/samples/10/010_2_3.jpg', 10, true),
+(10, 'statics/samples/10/010_2_4.jpg', 10, true);
+
+-- Nhân viên ID 11
+INSERT INTO tblEyeRecognitionSample (memberId, eyeImageLink, label, isActive) VALUES
+(11, 'statics/samples/11/011_1_1.jpg', 11, true),
+(11, 'statics/samples/11/011_1_2.jpg', 11, true),
+(11, 'statics/samples/11/011_1_3.jpg', 11, true),
+(11, 'statics/samples/11/011_2_1.jpg', 11, true),
+(11, 'statics/samples/11/011_2_2.jpg', 11, true),
+(11, 'statics/samples/11/011_2_3.jpg', 11, true),
+(11, 'statics/samples/11/011_2_4.jpg', 11, true);
+
+-- Nhân viên ID 12
+INSERT INTO tblEyeRecognitionSample (memberId, eyeImageLink, label, isActive) VALUES
+(12, 'statics/samples/12/012_1_1.jpg', 12, true),
+(12, 'statics/samples/12/012_1_2.jpg', 12, true),
+(12, 'statics/samples/12/012_1_3.jpg', 12, true),
+(12, 'statics/samples/12/012_2_1.jpg', 12, true),
+(12, 'statics/samples/12/012_2_2.jpg', 12, true),
+(12, 'statics/samples/12/012_2_3.jpg', 12, true),
+(12, 'statics/samples/12/012_2_4.jpg', 12, true);
+
+-- Nhân viên ID 13
+INSERT INTO tblEyeRecognitionSample (memberId, eyeImageLink, label, isActive) VALUES
+(13, 'statics/samples/13/013_1_1.jpg', 13, true),
+(13, 'statics/samples/13/013_1_2.jpg', 13, true),
+(13, 'statics/samples/13/013_1_3.jpg', 13, true),
+(13, 'statics/samples/13/013_2_1.jpg', 13, true),
+(13, 'statics/samples/13/013_2_2.jpg', 13, true),
+(13, 'statics/samples/13/013_2_3.jpg', 13, true),
+(13, 'statics/samples/13/013_2_4.jpg', 13, true);
+
+-- Nhân viên ID 14
+INSERT INTO tblEyeRecognitionSample (memberId, eyeImageLink, label, isActive) VALUES
+(14, 'statics/samples/14/014_1_1.jpg', 14, true),
+(14, 'statics/samples/14/014_1_2.jpg', 14, true),
+(14, 'statics/samples/14/014_1_3.jpg', 14, true),
+(14, 'statics/samples/14/014_2_1.jpg', 14, true),
+(14, 'statics/samples/14/014_2_2.jpg', 14, true),
+(14, 'statics/samples/14/014_2_3.jpg', 14, true),
+(14, 'statics/samples/14/014_2_4.jpg', 14, true);
+
+-- Nhân viên ID 15
+INSERT INTO tblEyeRecognitionSample (memberId, eyeImageLink, label, isActive) VALUES
+(15, 'statics/samples/15/015_1_1.jpg', 15, true),
+(15, 'statics/samples/15/015_1_2.jpg', 15, true),
+(15, 'statics/samples/15/015_1_3.jpg', 15, true),
+(15, 'statics/samples/15/015_2_1.jpg', 15, true),
+(15, 'statics/samples/15/015_2_2.jpg', 15, true),
+(15, 'statics/samples/15/015_2_3.jpg', 15, true),
+(15, 'statics/samples/15/015_2_4.jpg', 15, true);
+
+-- Nhân viên ID 16
+INSERT INTO tblEyeRecognitionSample (memberId, eyeImageLink, label, isActive) VALUES
+(16, 'statics/samples/16/016_1_1.jpg', 16, true),
+(16, 'statics/samples/16/016_1_2.jpg', 16, true),
+(16, 'statics/samples/16/016_1_3.jpg', 16, true),
+(16, 'statics/samples/16/016_2_1.jpg', 16, true),
+(16, 'statics/samples/16/016_2_2.jpg', 16, true),
+(16, 'statics/samples/16/016_2_3.jpg', 16, true),
+(16, 'statics/samples/16/016_2_4.jpg', 16, true);
+
+-- Nhân viên ID 17
+INSERT INTO tblEyeRecognitionSample (memberId, eyeImageLink, label, isActive) VALUES
+(17, 'statics/samples/17/017_1_1.jpg', 17, true),
+(17, 'statics/samples/17/017_1_2.jpg', 17, true),
+(17, 'statics/samples/17/017_1_3.jpg', 17, true),
+(17, 'statics/samples/17/017_2_1.jpg', 17, true),
+(17, 'statics/samples/17/017_2_2.jpg', 17, true),
+(17, 'statics/samples/17/017_2_3.jpg', 17, true),
+(17, 'statics/samples/17/017_2_4.jpg', 17, true);
+
+-- Nhân viên ID 18
+INSERT INTO tblEyeRecognitionSample (memberId, eyeImageLink, label, isActive) VALUES
+(18, 'statics/samples/18/018_1_1.jpg', 18, true),
+(18, 'statics/samples/18/018_1_2.jpg', 18, true),
+(18, 'statics/samples/18/018_1_3.jpg', 18, true),
+(18, 'statics/samples/18/018_2_1.jpg', 18, true),
+(18, 'statics/samples/18/018_2_2.jpg', 18, true),
+(18, 'statics/samples/18/018_2_3.jpg', 18, true),
+(18, 'statics/samples/18/018_2_4.jpg', 18, true);
+
+-- Nhân viên ID 19
+INSERT INTO tblEyeRecognitionSample (memberId, eyeImageLink, label, isActive) VALUES
+(19, 'statics/samples/19/019_1_1.jpg', 19, true),
+(19, 'statics/samples/19/019_1_2.jpg', 19, true),
+(19, 'statics/samples/19/019_1_3.jpg', 19, true),
+(19, 'statics/samples/19/019_2_1.jpg', 19, true),
+(19, 'statics/samples/19/019_2_2.jpg', 19, true),
+(19, 'statics/samples/19/019_2_3.jpg', 19, true),
+(19, 'statics/samples/19/019_2_4.jpg', 19, true);
+
+-- Nhân viên ID 20
+INSERT INTO tblEyeRecognitionSample (memberId, eyeImageLink, label, isActive) VALUES
+(20, 'statics/samples/20/020_1_1.jpg', 20, true),
+(20, 'statics/samples/20/020_1_2.jpg', 20, true),
+(20, 'statics/samples/20/020_1_3.jpg', 20, true),
+(20, 'statics/samples/20/020_2_1.jpg', 20, true),
+(20, 'statics/samples/20/020_2_2.jpg', 20, true),
+(20, 'statics/samples/20/020_2_3.jpg', 20, true),
+(20, 'statics/samples/20/020_2_4.jpg', 20, true);
+
+-- Nhân viên ID 21
+INSERT INTO tblEyeRecognitionSample (memberId, eyeImageLink, label, isActive) VALUES
+(21, 'statics/samples/21/021_1_1.jpg', 21, true),
+(21, 'statics/samples/21/021_1_2.jpg', 21, true),
+(21, 'statics/samples/21/021_1_3.jpg', 21, true),
+(21, 'statics/samples/21/021_2_1.jpg', 21, true),
+(21, 'statics/samples/21/021_2_2.jpg', 21, true),
+(21, 'statics/samples/21/021_2_3.jpg', 21, true),
+(21, 'statics/samples/21/021_2_4.jpg', 21, true);
+
+-- Nhân viên ID 22
+INSERT INTO tblEyeRecognitionSample (memberId, eyeImageLink, label, isActive) VALUES
+(22, 'statics/samples/22/022_1_1.jpg', 22, true),
+(22, 'statics/samples/22/022_1_2.jpg', 22, true),
+(22, 'statics/samples/22/022_1_3.jpg', 22, true),
+(22, 'statics/samples/22/022_2_1.jpg', 22, true),
+(22, 'statics/samples/22/022_2_2.jpg', 22, true),
+(22, 'statics/samples/22/022_2_3.jpg', 22, true),
+(22, 'statics/samples/22/022_2_4.jpg', 22, true);
+
+-- Nhân viên ID 23
+INSERT INTO tblEyeRecognitionSample (memberId, eyeImageLink, label, isActive) VALUES
+(23, 'statics/samples/23/023_1_1.jpg', 23, true),
+(23, 'statics/samples/23/023_1_2.jpg', 23, true),
+(23, 'statics/samples/23/023_1_3.jpg', 23, true),
+(23, 'statics/samples/23/023_2_1.jpg', 23, true),
+(23, 'statics/samples/23/023_2_2.jpg', 23, true),
+(23, 'statics/samples/23/023_2_3.jpg', 23, true),
+(23, 'statics/samples/23/023_2_4.jpg', 23, true);
+
+-- Nhân viên ID 24
+INSERT INTO tblEyeRecognitionSample (memberId, eyeImageLink, label, isActive) VALUES
+(24, 'statics/samples/24/024_1_1.jpg', 24, true),
+(24, 'statics/samples/24/024_1_2.jpg', 24, true),
+(24, 'statics/samples/24/024_1_3.jpg', 24, true),
+(24, 'statics/samples/24/024_2_1.jpg', 24, true),
+(24, 'statics/samples/24/024_2_2.jpg', 24, true),
+(24, 'statics/samples/24/024_2_3.jpg', 24, true),
+(24, 'statics/samples/24/024_2_4.jpg', 24, true);
+
+-- Nhân viên ID 25
+INSERT INTO tblEyeRecognitionSample (memberId, eyeImageLink, label, isActive) VALUES
+(25, 'statics/samples/25/025_1_1.jpg', 25, true),
+(25, 'statics/samples/25/025_1_2.jpg', 25, true),
+(25, 'statics/samples/25/025_1_3.jpg', 25, true),
+(25, 'statics/samples/25/025_2_1.jpg', 25, true),
+(25, 'statics/samples/25/025_2_2.jpg', 25, true),
+(25, 'statics/samples/25/025_2_3.jpg', 25, true),
+(25, 'statics/samples/25/025_2_4.jpg', 25, true);
+
+-- Nhân viên ID 26
+INSERT INTO tblEyeRecognitionSample (memberId, eyeImageLink, label, isActive) VALUES
+(26, 'statics/samples/26/026_1_1.jpg', 26, true),
+(26, 'statics/samples/26/026_1_2.jpg', 26, true),
+(26, 'statics/samples/26/026_1_3.jpg', 26, true),
+(26, 'statics/samples/26/026_2_1.jpg', 26, true),
+(26, 'statics/samples/26/026_2_2.jpg', 26, true),
+(26, 'statics/samples/26/026_2_3.jpg', 26, true),
+(26, 'statics/samples/26/026_2_4.jpg', 26, true);
+
+-- Nhân viên ID 27
+INSERT INTO tblEyeRecognitionSample (memberId, eyeImageLink, label, isActive) VALUES
+(27, 'statics/samples/27/027_1_1.jpg', 27, true),
+(27, 'statics/samples/27/027_1_2.jpg', 27, true),
+(27, 'statics/samples/27/027_1_3.jpg', 27, true),
+(27, 'statics/samples/27/027_2_1.jpg', 27, true),
+(27, 'statics/samples/27/027_2_2.jpg', 27, true),
+(27, 'statics/samples/27/027_2_3.jpg', 27, true),
+(27, 'statics/samples/27/027_2_4.jpg', 27, true);
+
+-- Nhân viên ID 28
+INSERT INTO tblEyeRecognitionSample (memberId, eyeImageLink, label, isActive) VALUES
+(28, 'statics/samples/28/028_1_1.jpg', 28, true),
+(28, 'statics/samples/28/028_1_2.jpg', 28, true),
+(28, 'statics/samples/28/028_1_3.jpg', 28, true),
+(28, 'statics/samples/28/028_2_1.jpg', 28, true),
+(28, 'statics/samples/28/028_2_2.jpg', 28, true),
+(28, 'statics/samples/28/028_2_3.jpg', 28, true),
+(28, 'statics/samples/28/028_2_4.jpg', 28, true);
+
+-- Nhân viên ID 29
+INSERT INTO tblEyeRecognitionSample (memberId, eyeImageLink, label, isActive) VALUES
+(29, 'statics/samples/29/029_1_1.jpg', 29, true),
+(29, 'statics/samples/29/029_1_2.jpg', 29, true),
+(29, 'statics/samples/29/029_1_3.jpg', 29, true),
+(29, 'statics/samples/29/029_2_1.jpg', 29, true),
+(29, 'statics/samples/29/029_2_2.jpg', 29, true),
+(29, 'statics/samples/29/029_2_3.jpg', 29, true),
+(29, 'statics/samples/29/029_2_4.jpg', 29, true);
+
+-- Nhân viên ID 30
+INSERT INTO tblEyeRecognitionSample (memberId, eyeImageLink, label, isActive) VALUES
+(30, 'statics/samples/30/030_1_1.jpg', 30, true),
+(30, 'statics/samples/30/030_1_2.jpg', 30, true),
+(30, 'statics/samples/30/030_1_3.jpg', 30, true),
+(30, 'statics/samples/30/030_2_1.jpg', 30, true),
+(30, 'statics/samples/30/030_2_2.jpg', 30, true),
+(30, 'statics/samples/30/030_2_3.jpg', 30, true),
+(30, 'statics/samples/30/030_2_4.jpg', 30, true);
+
+-- Nhân viên ID 31
+INSERT INTO tblEyeRecognitionSample (memberId, eyeImageLink, label, isActive) VALUES
+(31, 'statics/samples/31/031_1_1.jpg', 31, true),
+(31, 'statics/samples/31/031_1_2.jpg', 31, true),
+(31, 'statics/samples/31/031_1_3.jpg', 31, true),
+(31, 'statics/samples/31/031_2_1.jpg', 31, true),
+(31, 'statics/samples/31/031_2_2.jpg', 31, true),
+(31, 'statics/samples/31/031_2_3.jpg', 31, true),
+(31, 'statics/samples/31/031_2_4.jpg', 31, true);
+
+-- Nhân viên ID 32
+INSERT INTO tblEyeRecognitionSample (memberId, eyeImageLink, label, isActive) VALUES
+(32, 'statics/samples/32/032_1_1.jpg', 32, true),
+(32, 'statics/samples/32/032_1_2.jpg', 32, true),
+(32, 'statics/samples/32/032_1_3.jpg', 32, true),
+(32, 'statics/samples/32/032_2_1.jpg', 32, true),
+(32, 'statics/samples/32/032_2_2.jpg', 32, true),
+(32, 'statics/samples/32/032_2_3.jpg', 32, true),
+(32, 'statics/samples/32/032_2_4.jpg', 32, true);
+
+-- Nhân viên ID 33
+INSERT INTO tblEyeRecognitionSample (memberId, eyeImageLink, label, isActive) VALUES
+(33, 'statics/samples/33/033_1_1.jpg', 33, true),
+(33, 'statics/samples/33/033_1_2.jpg', 33, true),
+(33, 'statics/samples/33/033_1_3.jpg', 33, true),
+(33, 'statics/samples/33/033_2_1.jpg', 33, true),
+(33, 'statics/samples/33/033_2_2.jpg', 33, true),
+(33, 'statics/samples/33/033_2_3.jpg', 33, true),
+(33, 'statics/samples/33/033_2_4.jpg', 33, true);
+
+-- Nhân viên ID 34
+INSERT INTO tblEyeRecognitionSample (memberId, eyeImageLink, label, isActive) VALUES
+(34, 'statics/samples/34/034_1_1.jpg', 34, true),
+(34, 'statics/samples/34/034_1_2.jpg', 34, true),
+(34, 'statics/samples/34/034_1_3.jpg', 34, true),
+(34, 'statics/samples/34/034_2_1.jpg', 34, true),
+(34, 'statics/samples/34/034_2_2.jpg', 34, true),
+(34, 'statics/samples/34/034_2_3.jpg', 34, true),
+(34, 'statics/samples/34/034_2_4.jpg', 34, true);
+
+-- Nhân viên ID 35
+INSERT INTO tblEyeRecognitionSample (memberId, eyeImageLink, label, isActive) VALUES
+(35, 'statics/samples/35/035_1_1.jpg', 35, true),
+(35, 'statics/samples/35/035_1_2.jpg', 35, true),
+(35, 'statics/samples/35/035_1_3.jpg', 35, true),
+(35, 'statics/samples/35/035_2_1.jpg', 35, true),
+(35, 'statics/samples/35/035_2_2.jpg', 35, true),
+(35, 'statics/samples/35/035_2_3.jpg', 35, true),
+(35, 'statics/samples/35/035_2_4.jpg', 35, true);
+
+-- Nhân viên ID 36
+INSERT INTO tblEyeRecognitionSample (memberId, eyeImageLink, label, isActive) VALUES
+(36, 'statics/samples/36/036_1_1.jpg', 36, true),
+(36, 'statics/samples/36/036_1_2.jpg', 36, true),
+(36, 'statics/samples/36/036_1_3.jpg', 36, true),
+(36, 'statics/samples/36/036_2_1.jpg', 36, true),
+(36, 'statics/samples/36/036_2_2.jpg', 36, true),
+(36, 'statics/samples/36/036_2_3.jpg', 36, true),
+(36, 'statics/samples/36/036_2_4.jpg', 36, true);
+
+-- Nhân viên ID 37
+INSERT INTO tblEyeRecognitionSample (memberId, eyeImageLink, label, isActive) VALUES
+(37, 'statics/samples/37/037_1_1.jpg', 37, true),
+(37, 'statics/samples/37/037_1_2.jpg', 37, true),
+(37, 'statics/samples/37/037_1_3.jpg', 37, true),
+(37, 'statics/samples/37/037_2_1.jpg', 37, true),
+(37, 'statics/samples/37/037_2_2.jpg', 37, true),
+(37, 'statics/samples/37/037_2_3.jpg', 37, true),
+(37, 'statics/samples/37/037_2_4.jpg', 37, true);
+
+-- Nhân viên ID 38
+INSERT INTO tblEyeRecognitionSample (memberId, eyeImageLink, label, isActive) VALUES
+(38, 'statics/samples/38/038_1_1.jpg', 38, true),
+(38, 'statics/samples/38/038_1_2.jpg', 38, true),
+(38, 'statics/samples/38/038_1_3.jpg', 38, true),
+(38, 'statics/samples/38/038_2_1.jpg', 38, true),
+(38, 'statics/samples/38/038_2_2.jpg', 38, true),
+(38, 'statics/samples/38/038_2_3.jpg', 38, true),
+(38, 'statics/samples/38/038_2_4.jpg', 38, true);
+
+-- Nhân viên ID 39
+INSERT INTO tblEyeRecognitionSample (memberId, eyeImageLink, label, isActive) VALUES
+(39, 'statics/samples/39/039_1_1.jpg', 39, true),
+(39, 'statics/samples/39/039_1_2.jpg', 39, true),
+(39, 'statics/samples/39/039_1_3.jpg', 39, true),
+(39, 'statics/samples/39/039_2_1.jpg', 39, true),
+(39, 'statics/samples/39/039_2_2.jpg', 39, true),
+(39, 'statics/samples/39/039_2_3.jpg', 39, true),
+(39, 'statics/samples/39/039_2_4.jpg', 39, true);
+
+-- Nhân viên ID 40
+INSERT INTO tblEyeRecognitionSample (memberId, eyeImageLink, label, isActive) VALUES
+(40, 'statics/samples/40/040_1_1.jpg', 40, true),
+(40, 'statics/samples/40/040_1_2.jpg', 40, true),
+(40, 'statics/samples/40/040_1_3.jpg', 40, true),
+(40, 'statics/samples/40/040_2_1.jpg', 40, true),
+(40, 'statics/samples/40/040_2_2.jpg', 40, true),
+(40, 'statics/samples/40/040_2_3.jpg', 40, true),
+(40, 'statics/samples/40/040_2_4.jpg', 40, true);

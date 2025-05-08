@@ -1,0 +1,42 @@
+package com.memberservice.entity;
+
+
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Entity
+@Table(name = "tblMember")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class Member {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
+
+    @Column(name = "username", unique = true, nullable = false)
+    private String username;
+
+    @Column(name = "password", nullable = false)
+    private String password;
+
+    @Column(name = "phoneNumber")
+    private String phoneNumber;
+
+    @Column(name = "email")
+    private String email;
+
+    @Column(name = "department")
+    private String department;
+
+    @ManyToOne
+    @JoinColumn(name = "tblRoleId")
+    private Role role;
+
+    @ManyToOne
+    @JoinColumn(name = "tblFullNameId")
+    private FullName fullName;
+}

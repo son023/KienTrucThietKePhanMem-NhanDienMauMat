@@ -1,0 +1,4 @@
+package com.memberservice;
+
+public class RecognitionEventService {
+}

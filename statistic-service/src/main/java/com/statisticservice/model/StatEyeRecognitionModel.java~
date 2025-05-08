@@ -1,0 +1,98 @@
+package com.statisticservice.model;
+
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+
+public class StatEyeRecognitionModel {
+    private EyeRecognitionModel model_stats;
+    private Date startDate;
+    private Date endDate;
+    private List<RecognitionEvent> recognitionEvent;
+    private float averageResponseTime;
+    private float accuracyRate;
+    private int totalRecognitions;
+    private int successCount;
+    private int failCount;
+    private List<Map<String, Object>> dailyStats;
+
+    public EyeRecognitionModel getModel_stats() {
+        return model_stats;
+    }
+
+    public void setModel_stats(EyeRecognitionModel model_stats) {
+        this.model_stats = model_stats;
+    }
+
+    public Date getStartDate() {
+        return startDate;
+    }
+
+    public void setStartDate(Date startDate) {
+        this.startDate = startDate;
+    }
+
+    public Date getEndDate() {
+        return endDate;
+    }
+
+    public void setEndDate(Date endDate) {
+        this.endDate = endDate;
+    }
+
+    public List<RecognitionEvent> getRecognitionEvent() {
+        return recognitionEvent;
+    }
+
+    public void setRecognitionEvent(List<RecognitionEvent> recognitionEvent) {
+        this.recognitionEvent = recognitionEvent;
+    }
+
+    public float getAverageResponseTime() {
+        return averageResponseTime;
+    }
+
+    public void setAverageResponseTime(float averageResponseTime) {
+        this.averageResponseTime = averageResponseTime;
+    }
+
+    public float getAccuracyRate() {
+        return accuracyRate;
+    }
+
+    public void setAccuracyRate(float accuracyRate) {
+        this.accuracyRate = accuracyRate;
+    }
+
+    public int getTotalRecognitions() {
+        return totalRecognitions;
+    }
+
+    public void setTotalRecognitions(int totalRecognitions) {
+        this.totalRecognitions = totalRecognitions;
+    }
+
+    public int getSuccessCount() {
+        return successCount;
+    }
+
+    public void setSuccessCount(int successCount) {
+        this.successCount = successCount;
+    }
+
+    public int getFailCount() {
+        return failCount;
+    }
+
+    public void setFailCount(int failCount) {
+        this.failCount = failCount;
+    }
+
+    public List<Map<String, Object>> getDailyStats() {
+        return dailyStats;
+    }
+
+    public void setDailyStats(List<Map<String, Object>> dailyStats) {
+        this.dailyStats = dailyStats;
+    }
+}

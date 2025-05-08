@@ -1,0 +1,54 @@
+package com.memberservice.service;
+
+import com.memberservice.entity.Member;
+import com.memberservice.repository.MemberRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+@Service
+public class MemberService {
+
+    private final MemberRepository memberRepository;
+
+    @Autowired
+    public MemberService(MemberRepository memberRepository) {
+        this.memberRepository = memberRepository;
+    }
+
+    public List<MemberDTO> getAllMembers() {
+        return memberRepository.findAll().stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    public Optional<MemberDTO> getMemberById(Integer id) {
+        return memberRepository.findById(id)
+                .map(this::convertToDTO);
+    }
+
+    public Optional<MemberDTO> getMemberByUsername(String username) {
+        return memberRepository.findByUsername(username)
+                .map(this::convertToDTO);
+    }
+
+    private MemberDTO convertToDTO(Member member) {
+        MemberDTO dto = new MemberDTO();
+        dto.setId(member.getId());
+        dto.setUsername(member.getUsername());
+        if (member.getFullName() != null) {
+            dto.setFirstName(member.getFullName().getFirstName());
+            dto.setLastName(member.getFullName().getLastName());
+        }
+        dto.setPhoneNumber(member.getPhoneNumber());
+        dto.setEmail(member.getEmail());
+        dto.setDepartment(member.getDepartment());
+        if (member.getRole() != null) {
+            dto.setRoleName(member.getRole().getRoleName());
+        }
+        return dto;
+    }
+}

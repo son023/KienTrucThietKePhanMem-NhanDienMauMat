@@ -1,0 +1,91 @@
+-- Tạo cơ sở dữ liệu 3
+CREATE DATABASE eye_detection_db;
+
+-- Kết nối đến CSDL vừa tạo
+\c eye_detection_db;
+-- Tạo bảng tblDetectEyeData
+CREATE TABLE tblDetectEyeData (
+    id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    imageLink varchar(255) NOT NULL,
+    labelLink varchar(255) NOT NULL,
+    tblDetectEyeDataTrainId integer  -- Xóa (10)
+);
+
+-- Tạo bảng tblDetectEyeDataTrain
+CREATE TABLE tblDetectEyeDataTrain (
+    id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    dataTrainPath varchar(255) NOT NULL,
+    detailFilePath varchar(255) NOT NULL
+);
+
+-- Tạo bảng TrainDetectionHistory
+CREATE TABLE TrainDetectionHistory (
+    id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    tblDetectEyeDataTrainId integer NOT NULL,  -- Xóa (10)
+    tblEyeDetectionModelId integer NOT NULL,  -- Xóa (10)
+    epochs integer NOT NULL,                  -- Xóa (10)
+    batchSize integer NOT NULL,               -- Xóa (10)
+    imageSize integer NOT NULL,               -- Xóa (10)
+    learningRate double precision NOT NULL,   -- Thay float(10) bằng double precision
+    timeTrain timestamp DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tạo bảng tblEyeDetectionModel
+CREATE TABLE tblEyeDetectionModel (
+    id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    modelName varchar(100) NOT NULL,
+    modelLink varchar(255) NOT NULL,
+    mapMetrix double precision NOT NULL,      -- Thay float(10) bằng double precision
+    isActive boolean DEFAULT true,            -- Chuyển integer(1) sang boolean
+    createDate timestamp DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tạo khóa ngoại
+ALTER TABLE tblDetectEyeData 
+    ADD CONSTRAINT fk_detect_eye_data_train_id 
+    FOREIGN KEY (tblDetectEyeDataTrainId) 
+    REFERENCES tblDetectEyeDataTrain(id);
+
+ALTER TABLE TrainDetectionHistory 
+    ADD CONSTRAINT fk_detect_eye_data_train_id_history 
+    FOREIGN KEY (tblDetectEyeDataTrainId) 
+    REFERENCES tblDetectEyeDataTrain(id);
+
+ALTER TABLE TrainDetectionHistory 
+    ADD CONSTRAINT fk_eye_detection_model_id 
+    FOREIGN KEY (tblEyeDetectionModelId) 
+    REFERENCES tblEyeDetectionModel(id);
+
+-- Thêm dữ liệu mẫu vào bảng mô hình phát hiện mắt
+INSERT INTO tblEyeDetectionModel (modelName, modelLink, mapMetrix, isActive) VALUES
+    ('EyeDetect-YOLO-v4', '/models/eye_detection/yolov4-eye.weights', 0.887, true),
+    ('EyeDetect-SSD', '/models/eye_detection/ssd-eye.pb', 0.842, true),
+    ('EyeDetect-FasterRCNN', '/models/eye_detection/faster_rcnn_eye.pb', 0.915, true),
+    ('EyeDetect-RetinaNet', '/models/eye_detection/retinanet_eye.h5', 0.902, true),
+    ('EyeDetect-YOLO-v5', '/models/eye_detection/yolov5-eye.pt', 0.928, true);
+
+-- Thêm dữ liệu mẫu cho bảng huấn luyện phát hiện mắt
+INSERT INTO tblDetectEyeDataTrain (dataTrainPath, detailFilePath) VALUES
+    ('/detection/training/batch1', '/detection/training/batch1/details.json'),
+    ('/detection/training/batch2', '/detection/training/batch2/details.json');
+
+-- Thêm dữ liệu mẫu cho bảng dữ liệu phát hiện mắt
+INSERT INTO tblDetectEyeData (imageLink, labelLink, tblDetectEyeDataTrainId) VALUES
+    ('/detection/samples/eye_img001.jpg', '/detection/labels/eye_label001.txt', 1),
+    ('/detection/samples/eye_img002.jpg', '/detection/labels/eye_label002.txt', 1),
+    ('/detection/samples/eye_img003.jpg', '/detection/labels/eye_label003.txt', 1),
+    ('/detection/samples/eye_img004.jpg', '/detection/labels/eye_label004.txt', 1),
+    ('/detection/samples/eye_img005.jpg', '/detection/labels/eye_label005.txt', 1),
+    ('/detection/samples/eye_img006.jpg', '/detection/labels/eye_label006.txt', 2),
+    ('/detection/samples/eye_img007.jpg', '/detection/labels/eye_label007.txt', 2),
+    ('/detection/samples/eye_img008.jpg', '/detection/labels/eye_label008.txt', 2),
+    ('/detection/samples/eye_img009.jpg', '/detection/labels/eye_label009.txt', 2),
+    ('/detection/samples/eye_img010.jpg', '/detection/labels/eye_label010.txt', 2);
+
+-- Thêm dữ liệu mẫu cho bảng lịch sử huấn luyện phát hiện
+INSERT INTO TrainDetectionHistory (tblDetectEyeDataTrainId, tblEyeDetectionModelId, epochs, batchSize, imageSize, learningRate) VALUES
+    (1, 1, 50, 32, 416, 0.001),
+    (1, 2, 40, 32, 300, 0.0005),
+    (1, 3, 30, 16, 600, 0.0001),
+    (2, 4, 45, 32, 640, 0.0008),
+    (2, 5, 35, 64, 512, 0.001);

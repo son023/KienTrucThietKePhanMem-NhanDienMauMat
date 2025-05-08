@@ -1,0 +1,20 @@
+package com.statisticservice.builder;
+
+import com.statisticservice.model.EyeRecognitionModel;
+import com.statisticservice.model.RecognitionEvent;
+import com.statisticservice.model.StatEyeRecognitionModel;
+
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+
+public interface StatRecognitionModelBuilder {
+    StatRecognitionModelBuilder modelStats(EyeRecognitionModel model);
+    StatRecognitionModelBuilder dateRange(Date startDate, Date endDate);
+    StatRecognitionModelBuilder recognitionEvents(List<RecognitionEvent> events);
+    StatRecognitionModelBuilder averageResponseTime(float time);
+    StatRecognitionModelBuilder accuracyRate(float rate);
+    StatRecognitionModelBuilder recognitionCounts(int total, int success, int fail);
+    StatRecognitionModelBuilder dailyStats(List<Map<String, Object>> dailyStats);
+    StatEyeRecognitionModel build();
+}

@@ -1,0 +1,152 @@
+-- Tạo cơ sở dữ liệu 2
+CREATE DATABASE member_management_db;
+
+-- Kết nối đến CSDL vừa tạo
+\c member_management_db;
+
+-- Chỉnh sửa bảng tblRecognitionEvent
+CREATE TABLE tblRecognitionEvent (
+    id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    imageLink varchar(255) NOT NULL,
+    recognitionModelId integer NOT NULL,
+    eyeDetectionModelId integer NOT NULL,
+    cameraName varchar(100) NOT NULL,
+    timeVerify timestamp DEFAULT CURRENT_TIMESTAMP,
+    isSuccessful boolean DEFAULT false,
+    accuracy float,
+    tblMemberId integer
+);
+
+-- Tạo bảng tblRole (không cần thay đổi)
+CREATE TABLE tblRole (
+    id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    roleName varchar(50) NOT NULL,
+    des varchar(255) NULL
+);
+
+-- Tạo bảng tblFullName (không cần thay đổi)
+CREATE TABLE tblFullName (
+    id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    firstName varchar(50) NOT NULL,
+    lastName varchar(50) NOT NULL
+);
+
+-- Tạo bảng tblMember (không cần thay đổi)
+CREATE TABLE tblMember (
+    id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    username varchar(50) NOT NULL UNIQUE,
+    password varchar(255) NOT NULL,
+    phoneNumber varchar(20),
+    email varchar(100),
+    department varchar(100),
+    tblRoleId integer,
+    tblFullNameId integer
+);
+
+-- Tạo khóa ngoại (không thay đổi)
+ALTER TABLE tblMember 
+    ADD CONSTRAINT fk_role_id 
+    FOREIGN KEY (tblRoleId) 
+    REFERENCES tblRole(id);
+
+ALTER TABLE tblMember 
+    ADD CONSTRAINT fk_fullname_id 
+    FOREIGN KEY (tblFullNameId) 
+    REFERENCES tblFullName(id);
+
+ALTER TABLE tblRecognitionEvent 
+    ADD CONSTRAINT fk_member_id 
+    FOREIGN KEY (tblMemberId) 
+    REFERENCES tblMember(id);
+
+INSERT INTO tblRole (roleName, des) VALUES
+('Admin', 'Quản trị viên hệ thống'),
+('User', 'Người dùng thông thường'),
+('Manager', 'Quản lý phòng ban'),
+('IT Support', 'Nhân viên hỗ trợ kỹ thuật');
+
+-- Thêm dữ liệu vào bảng tblFullName
+INSERT INTO tblFullName (firstName, lastName) VALUES
+('Nguyễn', 'Văn An'),
+('Trần', 'Thị Bình'),
+('Lê', 'Hoàng Cường'),
+('Phạm', 'Minh Dương'),
+('Hoàng', 'Thu Hà'),
+('Ngô', 'Văn Giáp'),
+('Đỗ', 'Thị Hồng'),
+('Vũ', 'Đức Hùng'),
+('Nguyễn', 'Thị Lan'),
+('Trần', 'Văn Khánh'),
+('Lê', 'Thị Linh'),
+('Phạm', 'Văn Minh'),
+('Hoàng', 'Thị Ngọc'),
+('Ngô', 'Đức Phong'),
+('Đỗ', 'Thu Quỳnh'),
+('Vũ', 'Văn Sơn'),
+('Nguyễn', 'Thị Tâm'),
+('Trần', 'Đức Thắng'),
+('Lê', 'Thu Uyên'),
+('Phạm', 'Văn Vũ'),
+('Hoàng', 'Thị Xuân'),
+('Ngô', 'Văn Yên'),
+('Đỗ', 'Thị Ánh'),
+('Vũ', 'Đức Bách'),
+('Nguyễn', 'Thị Châu'),
+('Trần', 'Văn Đạt'),
+('Lê', 'Thị Giang'),
+('Phạm', 'Văn Hiếu'),
+('Hoàng', 'Thị Khánh'),
+('Ngô', 'Đức Lâm'),
+('Đỗ', 'Thu Mai'),
+('Vũ', 'Văn Nam'),
+('Nguyễn', 'Thị Oanh'),
+('Trần', 'Đức Phúc'),
+('Lê', 'Thu Quế'),
+('Phạm', 'Văn Sáng'),
+('Hoàng', 'Thị Thảo'),
+('Ngô', 'Văn Trung'),
+('Đỗ', 'Thị Vân'),
+('Vũ', 'Đức Xương');
+
+-- Thêm dữ liệu vào bảng tblMember
+INSERT INTO tblMember (username, password, phoneNumber, email, department, tblRoleId, tblFullNameId) VALUES
+('nguyenan', 'pass123', '0901234567', 'nguyenan@company.com', 'Phòng Kế toán', 2, 1),
+('tranbinh', 'pass123', '0901234568', 'tranbinh@company.com', 'Phòng Nhân sự', 2, 2),
+('lecuong', 'pass123', '0901234569', 'lecuong@company.com', 'Phòng Kỹ thuật', 2, 3),
+('phamduong', 'pass123', '0901234570', 'phamduong@company.com', 'Phòng Kỹ thuật', 2, 4),
+('hoangha', 'pass123', '0901234571', 'hoangha@company.com', 'Phòng Kinh doanh', 3, 5),
+('ngogiap', 'pass123', '0901234572', 'ngogiap@company.com', 'Phòng Kinh doanh', 2, 6),
+('dohong', 'pass123', '0901234573', 'dohong@company.com', 'Phòng Marketing', 2, 7),
+('vuhung', 'pass123', '0901234574', 'vuhung@company.com', 'Phòng IT', 4, 8),
+('nguyenlan', 'pass123', '0901234575', 'nguyenlan@company.com', 'Phòng Kế toán', 2, 9),
+('trankhanh', 'pass123', '0901234576', 'trankhanh@company.com', 'Phòng Nhân sự', 3, 10),
+('lelinh', 'pass123', '0901234577', 'lelinh@company.com', 'Phòng Kỹ thuật', 2, 11),
+('phamminh', 'pass123', '0901234578', 'phamminh@company.com', 'Phòng Kỹ thuật', 2, 12),
+('hoangngoc', 'pass123', '0901234579', 'hoangngoc@company.com', 'Phòng Kinh doanh', 2, 13),
+('ngophong', 'pass123', '0901234580', 'ngophong@company.com', 'Phòng Kinh doanh', 2, 14),
+('doquynh', 'pass123', '0901234581', 'doquynh@company.com', 'Phòng Marketing', 2, 15),
+('vuson', 'pass123', '0901234582', 'vuson@company.com', 'Phòng IT', 4, 16),
+('nguyentam', 'pass123', '0901234583', 'nguyentam@company.com', 'Phòng Kế toán', 2, 17),
+('tranthang', 'admin123', '0901234584', 'tranthang@company.com', 'Ban Giám đốc', 1, 18),
+('leuyen', 'pass123', '0901234585', 'leuyen@company.com', 'Phòng Kỹ thuật', 2, 19),
+('phamvu', 'pass123', '0901234586', 'phamvu@company.com', 'Phòng Kỹ thuật', 2, 20),
+('hoangxuan', 'pass123', '0901234587', 'hoangxuan@company.com', 'Phòng Kinh doanh', 2, 21),
+('ngoyen', 'pass123', '0901234588', 'ngoyen@company.com', 'Phòng Kinh doanh', 2, 22),
+('doanh', 'pass123', '0901234589', 'doanh@company.com', 'Phòng Marketing', 2, 23),
+('vubach', 'pass123', '0901234590', 'vubach@company.com', 'Phòng IT', 4, 24),
+('nguyenchau', 'pass123', '0901234591', 'nguyenchau@company.com', 'Phòng Kế toán', 2, 25),
+('trandat', 'pass123', '0901234592', 'trandat@company.com', 'Phòng Nhân sự', 3, 26),
+('legiang', 'pass123', '0901234593', 'legiang@company.com', 'Phòng Kỹ thuật', 2, 27),
+('phamhieu', 'pass123', '0901234594', 'phamhieu@company.com', 'Phòng Kỹ thuật', 2, 28),
+('hoangkhanh', 'pass123', '0901234595', 'hoangkhanh@company.com', 'Phòng Kinh doanh', 2, 29),
+('ngolam', 'pass123', '0901234596', 'ngolam@company.com', 'Phòng Kinh doanh', 2, 30),
+('domai', 'pass123', '0901234597', 'domai@company.com', 'Phòng Marketing', 2, 31),
+('vunam', 'pass123', '0901234598', 'vunam@company.com', 'Phòng IT', 4, 32),
+('nguyenoanh', 'pass123', '0901234599', 'nguyenoanh@company.com', 'Phòng Kế toán', 2, 33),
+('tranphuc', 'pass123', '0901234600', 'tranphuc@company.com', 'Phòng Nhân sự', 2, 34),
+('leque', 'pass123', '0901234601', 'leque@company.com', 'Phòng Kỹ thuật', 2, 35),
+('phamsang', 'pass123', '0901234602', 'phamsang@company.com', 'Phòng Kỹ thuật', 2, 36),
+('hoangthao', 'pass123', '0901234603', 'hoangthao@company.com', 'Phòng Kinh doanh', 2, 37),
+('ngotrung', 'pass123', '0901234604', 'ngotrung@company.com', 'Phòng Kinh doanh', 2, 38),
+('dovan', 'pass123', '0901234605', 'dovan@company.com', 'Phòng Marketing', 2, 39),
+('vuxuong', 'pass123', '0901234606', 'vuxuong@company.com', 'Phòng IT', 4, 40);

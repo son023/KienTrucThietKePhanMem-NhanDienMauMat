@@ -1,0 +1,125 @@
+package com.statisticservice.service;
+
+import com.statisticservice.builder.ImplStatRecognitionModelBuilder;
+import com.statisticservice.model.EyeRecognitionModel;
+import com.statisticservice.model.RecognitionEvent;
+import com.statisticservice.model.StatEyeRecognitionModel;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.*;
+import java.util.stream.Collectors;
+
+@Slf4j
+@Service
+public class StatisticsService {
+
+    @Autowired
+    private RecognitionModelService modelService;
+
+    @Autowired
+    private UserService userService;
+
+    /**
+     * Tạo thống kê cho một mô hình nhận diện cụ thể
+     */
+    public StatEyeRecognitionModel getModelStatistics(int modelId, Date startDate, Date endDate) {
+        // Lấy thông tin mô hình
+        EyeRecognitionModel model = modelService.getModelById(modelId);
+        if (model == null) {
+            throw new RuntimeException("Không tìm thấy mô hình với ID: " + modelId);
+        }
+        log.error("fer");
+
+        // Lấy danh sách sự kiện nhận diện cho mô hình
+        List<RecognitionEvent> events = userService.getEventsByModelId(modelId, startDate, endDate);
+        for(RecognitionEvent event : events) {
+            log.error(event.getIsSuccessful() + "");
+        }
+        // Tính toán các chỉ số thống kê
+        int totalRecognitions = events.size();
+        int successCount = (int) events.stream().filter(RecognitionEvent::getIsSuccessful).count();
+        int failCount = totalRecognitions - successCount;
+
+        float accuracyRate = totalRecognitions > 0 ? (float) successCount / totalRecognitions : 0;
+        log.error(successCount + "");
+        log.error(accuracyRate + "");
+        // Tính tỉ lệ false positive
+        float falsePositiveRate = calculateFalsePositiveRate(events);
+
+        // Sử dụng Builder để tạo đối tượng thống kê
+        StatEyeRecognitionModel statEyeRecognitionModel = new ImplStatRecognitionModelBuilder()
+                .modelStats(model)
+                .dateRange(startDate, endDate)
+                .recognitionEvents(events)
+                .recognitionCounts(successCount, failCount)
+                .accuracyRate(accuracyRate)
+                .falsePositiveRate(falsePositiveRate)
+                .build();
+
+        return statEyeRecognitionModel;
+    }
+
+
+
+    /**
+     * Lấy thống kê cho tất cả các mô hình với tùy chọn sắp xếp
+     */
+    public List<StatEyeRecognitionModel> getAllModelStatistics(Date startDate, Date endDate, String sortBy) {
+        List<EyeRecognitionModel> allModels = modelService.getAllActiveModels();
+        List<Integer> modelIds = allModels.stream()
+                .map(EyeRecognitionModel::getId)
+                .toList();
+
+        List<StatEyeRecognitionModel> results = new ArrayList<>();
+
+        for (Integer modelId : modelIds) {
+            try {
+                StatEyeRecognitionModel stats = getModelStatistics(modelId, startDate, endDate);
+                results.add(stats);
+            } catch (Exception e) {
+                System.err.println("Error getting statistics for model ID " + modelId + ": " + e.getMessage());
+            }
+        }
+
+        // Sắp xếp kết quả theo tiêu chí
+        sortModelStats(results, sortBy);
+
+        return results;
+    }
+
+    /**
+     * Sắp xếp danh sách thống kê mô hình theo tiêu chí
+     */
+    private void sortModelStats(List<StatEyeRecognitionModel> modelStats, String sortBy) {
+        switch (sortBy.toLowerCase()) {
+            case "success":
+                modelStats.sort((a, b) -> Integer.compare(b.getSuccess(), a.getSuccess())); // Sắp xếp giảm dần
+                break;
+            case "accuracy":
+            case "accuracyrate":
+                modelStats.sort((a, b) -> Float.compare(b.getAccuracyRate(), a.getAccuracyRate())); // Sắp xếp giảm dần
+                break;
+            default:
+                modelStats.sort((a, b) -> Integer.compare(b.getSuccess(), a.getSuccess())); // Mặc định sắp xếp theo success
+                break;
+        }
+    }
+
+    /**
+     * Tính tỉ lệ false positive dựa trên các sự kiện nhận diện
+     */
+    private float calculateFalsePositiveRate(List<RecognitionEvent> events) {
+        if (events == null || events.isEmpty()) {
+            return 0;
+        }
+
+        // Đếm số sự kiện false positive
+        long falsePositiveCount = events.stream()
+                .filter(event -> !event.getIsSuccessful() && event.getAccuracy() > 0.5)
+                .count();
+
+        return events.size() > 0 ? (float) falsePositiveCount / events.size() : 0;
+    }
+}

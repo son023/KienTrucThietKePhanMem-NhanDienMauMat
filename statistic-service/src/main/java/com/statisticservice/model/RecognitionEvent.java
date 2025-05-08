@@ -1,0 +1,87 @@
+package com.statisticservice.model;
+
+import java.util.Date;
+
+public class RecognitionEvent {
+    private int id;
+    private String imageLink;
+    private Member member;
+    private int recognitionModelId;
+    private int eyeDetectionModelId ;
+    private String cameraName;
+    private Date timeVerify;
+    private boolean isSuccessful;
+    private float accuracy;
+
+    public int getEyeDetectionModelId() {
+        return eyeDetectionModelId;
+    }
+
+    public void setEyeDetectionModelId(int eyeDetectionModelId) {
+        this.eyeDetectionModelId = eyeDetectionModelId;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public String getImageLink() {
+        return imageLink;
+    }
+
+    public void setImageLink(String imageLink) {
+        this.imageLink = imageLink;
+    }
+
+    public Member getMember() {
+        return member;
+    }
+
+    public void setMember(Member member) {
+        this.member = member;
+    }
+
+    public int getRecognitionModelId() {
+        return recognitionModelId;
+    }
+
+    public void setRecognitionModelId(int recognitionModelId) {
+        this.recognitionModelId = recognitionModelId;
+    }
+
+    public String getCameraName() {
+        return cameraName;
+    }
+
+    public void setCameraName(String cameraName) {
+        this.cameraName = cameraName;
+    }
+
+    public Date getTimeVerify() {
+        return timeVerify;
+    }
+
+    public void setTimeVerify(Date timeVerify) {
+        this.timeVerify = timeVerify;
+    }
+
+    public boolean getIsSuccessful() {
+        return isSuccessful;
+    }
+
+    public void setSuccessful(boolean successful) {
+        isSuccessful = successful;
+    }
+
+    public float getAccuracy() {
+        return accuracy;
+    }
+
+    public void setAccuracy(float accuracy) {
+        this.accuracy = accuracy;
+    }
+}

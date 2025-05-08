@@ -1,0 +1,20 @@
+
+# Server config
+server.port=8082
+server.servlet.context-path=/
+spring.application.name=statistic-service
+
+# Service URLs
+services.recognition.url=http://localhost:8000
+services.user.url=http://localhost:8080
+services.event.url=http://localhost:8080
+
+# Logging
+logging.level.root=INFO
+logging.level.com.eyesecurity=DEBUG
+logging.pattern.console=%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n
+
+# JSON formatting
+spring.jackson.date-format=yyyy-MM-dd HH:mm:ss
+spring.jackson.time-zone=Asia/Ho_Chi_Minh
+spring.jackson.serialization.indent_output=true
