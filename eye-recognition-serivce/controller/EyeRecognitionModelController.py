@@ -12,6 +12,7 @@ import cv2
 import numpy as np
 from datetime import datetime
 
+import uuid
 import time
 from torchvision.models.resnet import ResNet50_Weights
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
@@ -30,6 +31,8 @@ router = APIRouter(
     prefix="/api/eye-recognition-model",
     tags=["eye-recognition-model"]
 )
+
+MODEL_CACHE = {}
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -66,59 +69,6 @@ async def get_model_by_id(model_id: int):
             detail=f"Lỗi khi lấy thông tin mô hình nhận dạng mắt: {str(e)}"
         )
 
-@router.post("", response_model=EyeRecognitionModel)
-async def create_model(
-    model_link: str = Body(...),
-    eye_model_name: str = Body(...),
-    history_ids: List[int] = Body(...),
-    accuracy: Optional[float] = Body(None),
-    is_active: bool = Body(True),
-    epochs: Optional[int] = Body(None),
-    learning_rate: Optional[float] = Body(None),
-    image_size: Optional[int] = Body(None),
-    batch_size: Optional[int] = Body(None),
-    mapping_label: Optional[str] = Body(None)
-):
-    try:
-        # Kiểm tra các lịch sử mẫu tồn tại
-        histories = []
-        for history_id in history_ids:
-            history = await EyeRecognitionSampleHistoryDAO.get_by_id(history_id)
-            if not history:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail=f"Không tìm thấy lịch sử mẫu nhận dạng mắt với ID {history_id}"
-                )
-            histories.append(history)
-        
-        # Tạo đối tượng mô hình mới
-        new_model = EyeRecognitionModel(
-            id=0,
-            modelLink=model_link,
-            eyeModelName=eye_model_name,
-            eyeRecognitionSampleTrain=histories,
-            accuracy=accuracy,
-            isActive=is_active,
-            epochs=epochs,
-            learningRate=learning_rate,
-            imageSize=image_size,
-            batchSize=batch_size,
-            mappingLabel=mapping_label,
-            createDate=datetime.now()
-        )
-        
-        # Lưu vào cơ sở dữ liệu
-        saved_model = await EyeRecognitionModelDAO.create(new_model)
-        
-        return saved_model
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Lỗi khi tạo mô hình nhận dạng mắt: {str(e)}"
-        )
-        
 @router.post("/is-members-has-enough-samples", response_model= List[int])
 async def check_members_has_enough_samples( memberIds: List[int] = Body(...)):
     try:
@@ -137,15 +87,13 @@ async def delete_model(model_id: int):
     Xóa mô hình nhận dạng mắt
     """
     try:
-        # Kiểm tra mô hình tồn tại
         existing_model = await EyeRecognitionModelDAO.get_by_id(model_id)
         if not existing_model:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Không tìm thấy mô hình nhận dạng mắt với ID {model_id}"
             )
-        
-        # Xóa khỏi cơ sở dữ liệu
+        os.remove(existing_model.modelLink)
         await EyeRecognitionModelDAO.delete(model_id)
         
     except HTTPException:
@@ -168,7 +116,7 @@ async def get_all_histories_by_model_id(model_id: int):
         )
 
 
-@router.post("/train", response_model=EyeRecognitionModel)
+@router.post("/train", response_model = EyeRecognitionModel)
 async def train_model(
     memberIds: List[int] = Body(...),
     model_name: str = Body(...),
@@ -179,15 +127,15 @@ async def train_model(
 ):
     try:
         eye_recognition_samples = []
-        image_paths = []
+        image_paths =[]
         labels = []
         for memberId in memberIds:
             eye_recognition_sample = EyeRecognitionSampleDAO.get_by_member_id(memberId)
             eye_recognition_samples.extend(eye_recognition_sample)
-        for sample in eye_recognition_samples:
-            image_paths.append(sample.eyeImageLink)
-            labels.append(sample.label)
-      
+        for eye_recognition_sample in eye_recognition_samples:
+            image_paths.append(eye_recognition_sample.eyeImageLink)
+            labels.append(eye_recognition_sample.label)
+        
         iris_model = EyeRecognitionModel()
         iris_model.eyeModelName = model_name
         iris_model.eyeRecognitionSampleTrain = []
@@ -202,7 +150,7 @@ async def train_model(
             transforms.Resize((iris_model.imageSize, iris_model.imageSize)),
             transforms.RandomHorizontalFlip(p=0.5),
             transforms.RandomRotation(10),
-            transforms.ColorJitter(brightness=0.2, contrast=0.2),
+
             transforms.ToTensor(),
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
         ])
@@ -215,74 +163,106 @@ async def train_model(
         ])
         
         
-        train_paths, temp_paths, train_labels, temp_labels = train_test_split(
-            image_paths, labels, test_size=0.3, stratify=labels, random_state=42
+        train_paths, val_paths, train_labels, val_labels = train_test_split(
+            image_paths, labels, test_size=0.2, stratify= labels, random_state=42
         )
         
-        val_paths, test_paths, val_labels, test_labels = train_test_split(
-            temp_paths, temp_labels, test_size=0.5, stratify=temp_labels, random_state=42
-        )
+        print(f"Train: {len(train_paths)}")
+        print(f"Val: {len(val_paths)}")
         
-        print(f"Train samples: {len(train_paths)}")
-        print(f"Validation samples: {len(val_paths)}")
-        print(f"Test samples: {len(test_paths)}")
+        train_dataset = IrisDataSet(train_paths, train_labels, train_transform)
+        val_dataset = IrisDataSet(val_paths, val_labels, val_transform )
         
-        
-        train_dataset = IrisDataset(train_paths, train_labels, transform=train_transform)
-        val_dataset = IrisDataset(val_paths, val_labels, transform=val_transform)
-        test_dataset = IrisDataset(test_paths, test_labels, transform=val_transform)
-        
-        train_loader = DataLoader(train_dataset, batch_size=iris_model.batchSize, shuffle=True, num_workers=0)
-        val_loader = DataLoader(val_dataset, batch_size=iris_model.batchSize, shuffle=False, num_workers=0)
-        test_loader = DataLoader(test_dataset, batch_size=iris_model.batchSize, shuffle=False, num_workers=0)
-        
-        num_classes = len(set(labels))
-        print(num_classes)
-        model = load_model(num_classes)
-        
-        print("Bắt đầu huấn luyện mô hình...")
-        model, val_accuracy, training_time = train_model1(
-            model, train_loader, val_loader, 
-            iris_model.epochs, iris_model.learningRate
-        )
-        
-        iris_model.accuracy = val_accuracy / 100.0  
-        iris_model.trainingTime = int(training_time)
-        
-        model_path = f"models/{iris_model.eyeModelName}.pt"
-        torch.save(model.state_dict(), model_path)
-        iris_model.modelLink = model_path
+        train_loader = DataLoader(train_dataset, batch_size= iris_model.batchSize, shuffle = True, num_workers=0)
+        val_loader = DataLoader(val_dataset, batch_size = iris_model.batchSize, shuffle = True, num_workers = 0 )
 
-        iris_model.mappingLabel = " ".join(map(str, {idx: label for label, idx in train_dataset.label_to_idx.items()}))
+        num_classes = len(set(labels))
         
-        for eye_recognition_sample in eye_recognition_samples:
-            history = EyeRecognitionSampleHistory(id = 0, eyeRecognitionSample= eye_recognition_sample, notes= model_name)
-            iris_model.eyeRecognitionSampleTrain.append(history)
+        model = models.resnet50(weights = ResNet50_Weights.IMAGENET1K_V1)
+        for param in model.parameters():
+            param.requires_grad = False
             
-        model_result = await EyeRecognitionModelDAO.create(iris_model)
+        num_ftrs = model.fc.in_features
+        model.fc = nn.Linear(num_ftrs, num_classes)
         
-        return model_result
+        for param in model.fc.parameters():
+            param.requires_grad = True
+            
+        model.to(device)
+        
+        print("Bat dau huan luyen mo hinh")
+        model, val_accuracy, training_time, f1_score, precision = train_model_process(
+            model, train_loader, val_loader, iris_model.epochs, iris_model.learningRate
+        )
+        
+        iris_model.accuracy = val_accuracy
+        iris_model.trainingTime = training_time
+        iris_model.f1_score = f1_score
+        iris_model.precision = precision
+        
+        iris_model.mappingLabel = " ".join(map(str, {idx:label for label, idx in train_dataset.label_to_idx.items()}))
+        
+        temp_id = str(uuid.uuid4())
+        temp_model_path = f"{temp_id}_{iris_model.eyeModelName}.pt"
+        MODEL_CACHE[temp_model_path] = {
+            "iris_model": iris_model,
+            "eye_recognition_samples": eye_recognition_samples,
+            "model": model
+        }
+        
+        iris_model.modelLink = temp_model_path
+        
+        return iris_model
+    
     except Exception as e:
         raise HTTPException(
-            status_code=500,
-            detail=f"Lỗi khi tạo model: {str(e)}"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Lỗi huấn luyện: {e}"
         )
+ 
+ 
+@router.post("/save-trained-model/{temp_id}", response_model=EyeRecognitionModel)
+async def save_trained_model(temp_id: str):
+    try:
+        if temp_id not in MODEL_CACHE:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Không tìm thấy mô hình tạm thời"
+            )
         
-def train_model1( model, train_loader, val_loader, num_epochs, learning_rate, patience=5):
-    """
-    Huấn luyện mô hình với early stopping
-    """
-    criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=learning_rate)
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=2)
+        cached_data = MODEL_CACHE[temp_id]
+        iris_model = cached_data["iris_model"]
+        model = cached_data.get("model") 
+        
+        final_model_path = f"models/{iris_model.eyeModelName}.pt"
+        iris_model.modelLink = final_model_path
+        torch.save(model.state_dict(), final_model_path)
+        
+        model_result = await EyeRecognitionModelDAO.create(iris_model)
+        del MODEL_CACHE[temp_id]
+        
+        return model_result
     
-    best_val_loss = float('inf')
-    epochs_no_improve = 0
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Lỗi lưu mô hình: {e}"
+        )
+  
+def train_model_process( model, train_loader, val_loader, epochs, learning_rate):
+    criterion =  nn.CrossEntropyLoss() 
+    optimizer = optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr = learning_rate)
+    
     best_model_path = "models/best_iris_classifier.pt"
+    best_val_loss = float('inf')
     
     training_start_time = time.time()
     
-    for epoch in range(num_epochs):
+    best_val_acc = 0.0
+    best_f1_score = 0.0
+    best_precision = 0.0
+    
+    for epoch in range(epochs):
         start_time = time.time()
         
         model.train()
@@ -291,108 +271,98 @@ def train_model1( model, train_loader, val_loader, num_epochs, learning_rate, pa
         total = 0
         
         for images, labels in train_loader:
-            images, labels = images.to(device), labels.to(device)
+            images, labels = images.to(device), labels.to(device)  
             
-            optimizer.zero_grad()
+            optimizer.zero_grad()  
             outputs = model(images)
             loss = criterion(outputs, labels)
             loss.backward()
             optimizer.step()
             
             running_loss += loss.item()
+            
             _, predicted = torch.max(outputs.data, 1)
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
-        
+            
         train_loss = running_loss / len(train_loader)
-        train_acc = 100 * correct / total
+        train_acc = 100 * correct /total
         
         model.eval()
         val_correct = 0
         val_total = 0
         val_loss = 0.0
+        
+        all_predictions = []
+        all_labels = []
+        
         with torch.no_grad():
             for images, labels in val_loader:
                 images, labels = images.to(device), labels.to(device)
-                outputs = model(images)
+                outputs  = model(images)
                 loss = criterion(outputs, labels)
                 val_loss += loss.item()
                 _, predicted = torch.max(outputs.data, 1)
                 val_total += labels.size(0)
                 val_correct += (predicted == labels).sum().item()
+                
+                all_predictions.extend(predicted.cpu().numpy())
+                all_labels.extend(labels.cpu().numpy())
         
         val_loss = val_loss / len(val_loader)
         val_acc = 100 * val_correct / val_total
         
+        f1 = f1_score(all_labels, all_predictions, average='weighted')
+        precision = precision_score(all_labels, all_predictions, average='weighted', zero_division=0)
+        
         end_time = time.time()
         epoch_time = end_time - start_time
         
-        print(f"Epoch [{epoch+1}/{num_epochs}] Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.2f}%, "
-                f"Val Loss: {val_loss:.4f}, Val Acc: {val_acc:.2f}%, Time: {epoch_time:.2f}s")
-        
-        # Early stopping
+        print(f"Epoch [{epoch+1}/{epochs}] Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.2f}%, "
+              f"Val Loss: {val_loss:.4f}, Val Acc: {val_acc:.2f}%, "
+              f"F1: {f1:.4f}, Precision: {precision:.4f}, "
+              f"Time: {epoch_time:.2f}s")
+         
         if val_loss < best_val_loss:
             best_val_loss = val_loss
-            epochs_no_improve = 0
+            best_val_acc = val_acc
+            best_f1_score = f1
+            best_precision = precision
             torch.save(model.state_dict(), best_model_path)
-            print(f"Saved best model with Val Loss: {best_val_loss:.4f}")
-        else:
-            epochs_no_improve += 1
-            print(f"No improvement in {epochs_no_improve}/{patience} epochs.")
-            if epochs_no_improve >= patience:
-                print("Early stopping triggered.")
-                break
+            print(f"Luu mo hinh tot nhat voi Val loss:{ best_val_loss:.4f}")
         
-        # Cập nhật learning rate
-        scheduler.step(val_loss)
-    
-    # Tính tổng thời gian huấn luyện
     training_time = time.time() - training_start_time
-    print(f"Tổng thời gian huấn luyện: {training_time:.2f}s")
+    print(f"Tong thoi gian huan luyen:{training_time:.2f}s") 
     
-    # Tải mô hình tốt nhất
     if os.path.exists(best_model_path):
         model.load_state_dict(torch.load(best_model_path))
-    
-    return model, val_acc, training_time
-
-
-def load_model( num_classes):
-        """
-        Tải và điều chỉnh mô hình ResNet-50
-        """
-        model = models.resnet50(weights=ResNet50_Weights.IMAGENET1K_V1)
-        for param in model.parameters():
-            param.requires_grad = False
+        os.remove(best_model_path)
+    return model, val_acc, int(training_time), best_f1_score, best_precision            
         
-        num_ftrs = model.fc.in_features
-        model.fc = nn.Linear(num_ftrs, num_classes)
-        for param in model.fc.parameters():
-            param.requires_grad = True
-        
-        model.to(device)
-        return model
-    
-class IrisDataset(Dataset):
-    def __init__(self, image_paths, labels, transform=None):
+
+class IrisDataSet(Dataset):
+    def __init__(self, image_paths, labels, transform = None):
         self.image_paths = image_paths
         self.labels = labels
         self.transform = transform
-        self.label_to_idx = {label: idx for idx, label in enumerate(sorted(set(labels)))}
-
+        self.label_to_idx = { label:idx for idx, label in enumerate(sorted(set(labels)))}
+        
     def __len__(self):
         return len(self.image_paths)
 
     def __getitem__(self, idx):
-        img_path = self.image_paths[idx]
+        image_path = self.image_paths[idx]
         label = self.labels[idx]
         
-        img = cv2.imread(img_path)
+        img = cv2.imread(image_path)
+        
         if img is None:
-            raise ValueError(f"Không thể đọc ảnh {img_path}")
+            raise ValueError(f"Khong the doc anh {image_path}")
+        
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         
         if self.transform:
             img = self.transform(img)
         label_idx = self.label_to_idx[label]
-        return img, label_idx 
+        
+        return img, label_idx

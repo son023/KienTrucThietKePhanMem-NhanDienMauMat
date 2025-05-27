@@ -3,13 +3,13 @@ from psycopg2 import Error
 from psycopg2.extras import RealDictCursor  
 from datetime import datetime
 from entity.EyeRecognitionSample import EyeRecognitionSample
-from db_connection import get_connection
+from dao.DAO import DAO
 
 class EyeRecognitionSampleDAO:
     
     @staticmethod
     def get_by_id(sample_id: int) -> Optional[EyeRecognitionSample]:
-        conn = get_connection()
+        conn = DAO.get_connection()
         
         sample = None
         try:
@@ -32,7 +32,7 @@ class EyeRecognitionSampleDAO:
     
     @staticmethod
     def get_by_member_id(member_id: int) -> List[EyeRecognitionSample]:
-        conn = get_connection()
+        conn = DAO.get_connection()
         
         samples = []
         try:
@@ -53,7 +53,7 @@ class EyeRecognitionSampleDAO:
     
     @staticmethod
     async def is_member_has_enough_samples(memberId:int) -> bool:
-        conn = get_connection()
+        conn = DAO.get_connection()
         try:
             with conn.cursor(cursor_factory=RealDictCursor) as cursor:
                 query = "SELECT COUNT(*) FROM tblEyeRecognitionSample WHERE memberid = %s"

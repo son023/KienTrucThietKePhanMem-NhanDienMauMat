@@ -5,13 +5,13 @@ from psycopg2.extras import DictCursor, RealDictCursor
 from entity.EyeRecognitionSampleHistory import EyeRecognitionSampleHistory
 from entity.EyeRecognitionSample import EyeRecognitionSample
 from dao.EyeRecognitionSampleDAO import EyeRecognitionSampleDAO
-from db_connection import get_connection
+from dao.DAO import DAO
 
 class EyeRecognitionSampleHistoryDAO:
 
     @staticmethod
     async def get_all_by_model_id(model_id: int) -> List[EyeRecognitionSampleHistory]:
-        conn = get_connection()
+        conn = DAO.get_connection()
         
         histories = []
         try:
@@ -49,7 +49,7 @@ class EyeRecognitionSampleHistoryDAO:
     
     @staticmethod
     async def get_by_id(history_id: int) -> Optional[EyeRecognitionSampleHistory]:
-        conn = get_connection()
+        conn = DAO.get_connection()
         
         history = None
         try:
@@ -85,7 +85,7 @@ class EyeRecognitionSampleHistoryDAO:
     
     @staticmethod
     async def create(history: EyeRecognitionSampleHistory, modelId:int):
-        conn = get_connection()
+        conn = DAO.get_connection()
         
         try:
             with conn.cursor(cursor_factory=RealDictCursor) as cursor:
@@ -107,8 +107,7 @@ class EyeRecognitionSampleHistoryDAO:
     
     @staticmethod
     async def delete(history_id: int) -> bool:
-        conn = get_connection()
-        
+        conn = DAO.get_connection()
         try:
             with conn.cursor() as cursor:
                 delete_query = """

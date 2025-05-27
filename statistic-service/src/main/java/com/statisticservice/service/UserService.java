@@ -27,11 +27,9 @@ public class UserService {
     private String userServiceUrl;
 
     public List<RecognitionEvent> getEventsByModelId(int modelId, Date startDate, Date endDate) {
-        // Chuyển đổi Date sang LocalDate theo định dạng ISO
         LocalDate start = startDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
         LocalDate end = endDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
 
-        // Sử dụng ISO format YYYY-MM-DD cho LocalDate
         DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE;
 
         String url = UriComponentsBuilder.fromHttpUrl(userServiceUrl + "/api/recognition-events")

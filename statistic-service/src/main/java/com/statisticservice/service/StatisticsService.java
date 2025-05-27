@@ -26,7 +26,6 @@ public class StatisticsService {
         if (model == null) {
             throw new RuntimeException("Không tìm thấy mô hình với ID: " + modelId);
         }
-        log.error("fer");
 
         List<RecognitionEvent> events = userService.getEventsByModelId(modelId, startDate, endDate);
 
@@ -67,25 +66,9 @@ public class StatisticsService {
             }
         }
 
-        sortModelStats(results, sortBy);
+        results.sort((a, b) -> Integer.compare(b.getSuccess(), a.getSuccess()));
 
         return results;
-    }
-
-
-    private void sortModelStats(List<StatEyeRecognitionModel> modelStats, String sortBy) {
-        switch (sortBy.toLowerCase()) {
-            case "success":
-                modelStats.sort((a, b) -> Integer.compare(b.getSuccess(), a.getSuccess())); // Sắp xếp giảm dần
-                break;
-            case "accuracy":
-            case "accuracyrate":
-                modelStats.sort((a, b) -> Float.compare(b.getAccuracyRate(), a.getAccuracyRate())); // Sắp xếp giảm dần
-                break;
-            default:
-                modelStats.sort((a, b) -> Integer.compare(b.getSuccess(), a.getSuccess())); // Mặc định sắp xếp theo success
-                break;
-        }
     }
 
     private float calculateFalsePositiveRate(List<RecognitionEvent> events) {

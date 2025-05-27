@@ -59,3 +59,27 @@ class EyeDetectionModelDAO:
                 self.conn.close()
         
         return item
+    
+    def delete_eye_detection_model(self, model_id: int) -> bool:
+        self.conn = get_connection()
+        try:
+            with self.conn.cursor(cursor_factory=RealDictCursor) as cursor:
+                query_history = "DELETE FROM traindetectionhistory WHERE tbleyedetectionmodelid = %s"
+                
+                cursor.execute(query_history, (model_id,))
+                
+                query = "DELETE FROM tblEyeDetectionModel WHERE id = %s"
+                cursor.execute(query, (model_id,))
+                
+                self.conn.commit()
+                return True
+        except Error as e:
+            self.conn.rollback()
+            print(f"Lỗi khi xóa mô hình: {e}")
+            raise e
+        finally:
+            if self.conn:
+                self.conn.close()
+                
+        
+    

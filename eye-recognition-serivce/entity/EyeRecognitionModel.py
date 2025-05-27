@@ -9,6 +9,8 @@ class EyeRecognitionModel(BaseModel):
     eyeModelName: str  = None
     eyeRecognitionSampleTrain: list[EyeRecognitionSampleHistory]  = None
     accuracy: Optional[float] = None
+    f1_score: Optional[float] = None 
+    precision: Optional[float] = None
     isActive: bool = True
     epochs: Optional[int] = None
     learningRate: Optional[float] = None
@@ -29,6 +31,8 @@ class EyeRecognitionModel(BaseModel):
             eyeModelName=row["eyemodelname"],
             eyeRecognitionSampleTrain=sample_history,
             accuracy=row["accuracy"],
+            f1_score=row["f1_score"],
+            precision=row["precision"],
             isActive=row["isactive"],
             epochs=row["epochs"],
             learningRate=row["learningrate"],

@@ -47,3 +47,22 @@ async def get_eye_detection_model_by_id(model_id: int):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Lỗi khi lấy thông tin mô hình phát hiện mắt: {str(e)}"
         )
+        
+@router.delete("/{model_id}", status_code= status.HTTP_204_NO_CONTENT)
+def delete_model(model_id: int):
+    try:
+        existing_model = eye_detection_model_dao.get_by_id(model_id)
+        if not existing_model:
+            raise HTTPException(
+                status_code= status.HTTP_404_NOT_FOUND,
+                detail="Không tìm thấy mô hình phát hiện mắt"
+            )
+        eye_detection_model_dao.delete_eye_detection_model(model_id)
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code= status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Lỗi khi xóa mô hình phát hiện mắt {e}"
+        )

@@ -12,30 +12,6 @@ class DetectEyeDataTrainDAO:
         self.conn = None
         self.detect_eye_data_dao = DetectEyeDataDAO()
     
-    def get_all(self) -> List[DetectEyeDataTrain]:
-        self.conn = get_connection()
-        
-        items = []
-        try:
-            with self.conn.cursor(cursor_factory=RealDictCursor) as cursor:
-                query = "SELECT * FROM tblDetectEyeDataTrain"
-                cursor.execute(query)
-                rows = cursor.fetchall()
-                
-                for row in rows:
-                    eye_datas = self.detect_eye_data_dao.get_by_train_id(row["id"])
-                    item = DetectEyeDataTrain.from_db_row(row, eye_datas)
-                    items.append(item)
-                
-        except Error as e:
-            print(f"Lỗi khi lấy danh sách dữ liệu huấn luyện: {e}")
-            raise e
-        finally:
-            if self.conn:
-                self.conn.close()
-        
-        return items
-    
     def get_by_id(self, item_id: int) -> Optional[DetectEyeDataTrain]:
         self.conn = get_connection()
         

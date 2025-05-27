@@ -5,16 +5,16 @@ from psycopg2.extras import DictCursor, RealDictCursor
 from entity.EyeRecognitionModel import EyeRecognitionModel
 from entity.EyeRecognitionSampleHistory import EyeRecognitionSampleHistory
 from dao.EyeRecognitionSampleHistoryDAO import EyeRecognitionSampleHistoryDAO
-from db_connection import get_connection
+from dao.DAO import DAO
 import json
 from datetime import datetime
 
-class EyeRecognitionModelDAO:
+class EyeRecognitionModelDAO(DAO):
 
     
     @staticmethod
     async def get_all(active_only: bool = True) -> List[EyeRecognitionModel]:
-        conn = get_connection()
+        conn = DAO.get_connection()
         
         models = []
         try:
@@ -53,7 +53,7 @@ class EyeRecognitionModelDAO:
     
     @staticmethod
     async def get_by_id(model_id: int) -> Optional[EyeRecognitionModel]:
-        conn = get_connection()
+        conn = DAO.get_connection()
         
         model = None
         try:
@@ -69,13 +69,16 @@ class EyeRecognitionModelDAO:
                         eyeModelName=row["eyemodelname"],
                         eyeRecognitionSampleTrain=[],
                         accuracy=row["accuracy"],
+                        f1_score=row["f1_score"],
+                        precision=row["precision"],
                         isActive=row["isactive"],
                         epochs=row["epochs"],
                         learningRate=row["learningrate"],
                         imageSize=row["imagesize"],
                         batchSize=row["batchsize"],
                         mappingLabel=row["mappinglabel"],
-                        createDate=row["createdate"]
+                        createDate=row["createdate"],
+                        trainingTime= row["trainingtime"]
                     )
             
         except Error as e:
@@ -89,43 +92,42 @@ class EyeRecognitionModelDAO:
     
     @staticmethod
     async def create(model: EyeRecognitionModel) -> EyeRecognitionModel:
-        conn = get_connection()
+        conn = DAO.get_connection()
         
         try:
             with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-                # Tạo bản ghi mô hình mới
                 insert_query = """
                     INSERT INTO tblEyeRecognitionModel (
-                        modellink, eyemodelname, accuracy, isactive, 
+                        modellink, eyemodelname, accuracy,f1_score, precision, isactive, 
                         epochs, learningrate, imagesize, batchsize, 
-                        mappinglabel, createdate
-                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s) 
+                        mappinglabel, createdate, trainingtime
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) 
                     RETURNING id
                 """
                 cursor.execute(insert_query, (
                     model.modelLink, 
                     model.eyeModelName, 
                     model.accuracy, 
+                    model.f1_score,
+                    model.precision,
                     model.isActive, 
                     model.epochs, 
                     model.learningRate, 
                     model.imageSize, 
                     model.batchSize, 
                     model.mappingLabel, 
-                    datetime.now() if not model.createDate else model.createDate
+                    datetime.now() if not model.createDate else model.createDate,
+                    int(model.trainingTime)
                 ))
                 new_model_row = cursor.fetchone()
                 conn.commit()
-                # Lấy ID mới được tạo
+        
                 new_model_id = new_model_row["id"]
                 
-                
                 print(new_model_id)
-                # Tạo các bản ghi liên kết với lịch sử mẫu
                 for history in model.eyeRecognitionSampleTrain:
                     await EyeRecognitionSampleHistoryDAO.create(history,new_model_id)
                 
-                # Trả về đối tượng mô hình đã được tạo
                 return await EyeRecognitionModelDAO.get_by_id(new_model_id)
                 
         except Error as e:
@@ -139,18 +141,17 @@ class EyeRecognitionModelDAO:
 
     @staticmethod
     async def delete(model_id: int) -> bool:
-        conn = get_connection()
+        conn = DAO.get_connection()
         
         try:
             with conn.cursor() as cursor:
                 # Xóa tất cả các liên kết mô hình-lịch sử
                 delete_links_query = """
-                    DELETE FROM tblEyeRecognitionModelHistory
-                    WHERE modelid = %s
+                    DELETE FROM tblEyeRecognitionSampleHistory
+                    WHERE tblrecognitionmodelid = %s
                 """
                 cursor.execute(delete_links_query, (model_id,))
-                
-                # Xóa bản ghi mô hình
+               
                 delete_query = """
                     DELETE FROM tblEyeRecognitionModel
                     WHERE id = %s
