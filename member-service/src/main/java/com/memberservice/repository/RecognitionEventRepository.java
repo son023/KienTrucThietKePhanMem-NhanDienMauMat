@@ -6,12 +6,13 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @Repository
-public interface RecognitionEventRepository extends JpaRepository<RecognitionEvent, Integer> {
+public interface RecognitionEventRepository extends JpaRepository<RecognitionEvent, UUID> {
 
     List<RecognitionEvent> findByRecognitionModelIdAndTimeVerifyBetween(
-            Integer recognitionModelId, LocalDateTime startDate, LocalDateTime endDate);
+            UUID recognitionModelId, LocalDateTime startDate, LocalDateTime endDate);
 
     List<RecognitionEvent> findByTimeVerifyBetween(LocalDateTime startDate, LocalDateTime endDate);
 }

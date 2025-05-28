@@ -10,11 +10,11 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/recognition-events")
-
-    public class RecognitionEventController {
+public class RecognitionEventController {
 
     private final RecognitionEventService recognitionEventService;
 
@@ -25,7 +25,7 @@ import java.util.List;
 
     @GetMapping
     public ResponseEntity<List<RecognitionEvent>> getAllEventsByModelId(
-            @RequestParam(required = false) Integer model_id,
+            @RequestParam(required = false) UUID model_id,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start_date,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end_date) {
 

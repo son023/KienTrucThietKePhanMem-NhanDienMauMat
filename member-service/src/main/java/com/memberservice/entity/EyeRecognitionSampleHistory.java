@@ -1,6 +1,5 @@
 package com.memberservice.entity;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -9,11 +8,11 @@ import org.hibernate.annotations.GenericGenerator;
 import java.util.UUID;
 
 @Entity
-@Table(name = "tblFullName")
+@Table(name = "tblEyeRecognitionSampleHistory")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class FullName {
+public class EyeRecognitionSampleHistory {
 
     @Id
     @GeneratedValue(generator = "UUID")
@@ -21,12 +20,15 @@ public class FullName {
     @Column(name = "id", updatable = false, nullable = false)
     private UUID id;
 
-    @Column(name = "firstName")
-    @JsonProperty("firstName")
-    private String firstName;
+    @Column(name = "notes")
+    private String notes;
 
-    @Column(name = "lastName")
-    @JsonProperty("lastName")
-    private String lastName;
+    // Relationships
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "modelId")
+    private EyeRecognitionModel model;
 
-}
+    @ManyToOne(fetch = FetchType.EAGER) // Eager để luôn load sample details
+    @JoinColumn(name = "sampleId")
+    private EyeRecognitionSample eyeRecognitionSample;
+} 

@@ -1,5 +1,4 @@
-from fastapi import APIRouter, HTTPException, File, UploadFile, Form, status, Query, Body, Depends
-from typing import List, Optional
+from fastapi import APIRouter, HTTPException, status, Body
 import os
 import torch
 import torch.nn as nn
@@ -9,22 +8,18 @@ import torchvision.transforms as transforms
 from torch.utils.data import Dataset, DataLoader
 from sklearn.model_selection import train_test_split
 import cv2
-import numpy as np
 from datetime import datetime
 
 import uuid
 import time
 from torchvision.models.resnet import ResNet50_Weights
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
-import matplotlib.pyplot as plt
-import seaborn as sns
+from sklearn.metrics import precision_score, f1_score
 
 
-from entity.EyeRecognitionModel import EyeRecognitionModel
-from entity.EyeRecognitionSampleHistory import EyeRecognitionSampleHistory
-from dao.EyeRecognitionModelDAO import EyeRecognitionModelDAO
-from dao.EyeRecognitionSampleDAO import EyeRecognitionSampleDAO
-from dao.EyeRecognitionSampleHistoryDAO import EyeRecognitionSampleHistoryDAO
+from model.EyeRecognitionModel import EyeRecognitionModel
+from model.EyeRecognitionSample import EyeRecognitionSample
+from model.EyeRecognitionSampleHistory import EyeRecognitionSampleHistory
+from utils.image_downloader import ImageDownloader
 
 
 router = APIRouter(
@@ -32,118 +27,85 @@ router = APIRouter(
     tags=["eye-recognition-model"]
 )
 
-MODEL_CACHE = {}
-
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
-@router.get("", response_model=List[EyeRecognitionModel])
-async def get_all_models(
-    active_only: bool = Query(True, description="Chỉ lấy các mô hình đang hoạt động")
-):
-    try:
-        models = await EyeRecognitionModelDAO.get_all(active_only)
-        return models
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Lỗi khi lấy danh sách mô hình nhận dạng mắt: {str(e)}"
-        )
-
-@router.get("/{model_id}", response_model=EyeRecognitionModel)
-async def get_model_by_id(model_id: int):
-    try:
-        model = await EyeRecognitionModelDAO.get_by_id(model_id)
-        
-        if not model:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Không tìm thấy mô hình nhận dạng mắt với ID {model_id}"
-            )
-        
-        return model
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Lỗi khi lấy thông tin mô hình nhận dạng mắt: {str(e)}"
-        )
-
-@router.post("/is-members-has-enough-samples", response_model= List[int])
-async def check_members_has_enough_samples( memberIds: List[int] = Body(...)):
-    try:
-        memberIds_result = []
-        for member_id in memberIds:
-            is_enough = await EyeRecognitionSampleDAO.is_member_has_enough_samples(member_id)
-            if is_enough:
-                memberIds_result.append(member_id)
-        return memberIds_result
-    except Exception as e:
-        raise HTTPException (status_code=500, detail="Lỗi ở check_members_has_enough_samples")
-
-@router.delete("/{model_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_model(model_id: int):
-    """
-    Xóa mô hình nhận dạng mắt
-    """
-    try:
-        existing_model = await EyeRecognitionModelDAO.get_by_id(model_id)
-        if not existing_model:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Không tìm thấy mô hình nhận dạng mắt với ID {model_id}"
-            )
-        os.remove(existing_model.modelLink)
-        await EyeRecognitionModelDAO.delete(model_id)
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Lỗi khi xóa mô hình nhận dạng mắt: {str(e)}"
-        )
-
-@router.get("/get-history-by-model-id/{model_id}", response_model=List[EyeRecognitionSampleHistory])
-async def get_all_histories_by_model_id(model_id: int):
-    try:
-        histories = await EyeRecognitionSampleHistoryDAO.get_all_by_model_id(model_id)
-        return histories
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Lỗi khi lấy danh sách lịch sử mẫu nhận dạng mắt: {str(e)}"
-        )
 
 
 @router.post("/train", response_model = EyeRecognitionModel)
-async def train_model(
-    memberIds: List[int] = Body(...),
-    model_name: str = Body(...),
-    epochs: Optional[int] = Body(...),
-    batch_size: Optional[int] = Body(...),
-    learning_rate: Optional[float] = Body(...),
-    image_size: Optional[int] = Body(...),
-):
+async def train_model(request_data: dict = Body(...)):
     try:
-        eye_recognition_samples = []
-        image_paths =[]
-        labels = []
-        for memberId in memberIds:
-            eye_recognition_sample = EyeRecognitionSampleDAO.get_by_member_id(memberId)
-            eye_recognition_samples.extend(eye_recognition_sample)
-        for eye_recognition_sample in eye_recognition_samples:
-            image_paths.append(eye_recognition_sample.eyeImageLink)
-            labels.append(eye_recognition_sample.label)
+        print("=== TRAIN MODEL START ===")
+        print(f"Request data keys: {request_data.keys()}")
         
+        # Extract parameters từ request
+        samples_data = request_data.get("samples", [])
+        modelName = request_data.get("modelName", "")
+        epochs = request_data.get("epochs", 20)
+        batchSize = request_data.get("batchSize", 32)
+        learningRate = request_data.get("learningRate", 0.001)
+        imageSize = request_data.get("imageSize", 224)
+        
+        print(f"Parameters extracted - Model: {modelName}, Samples: {len(samples_data)}")
+        
+        # Convert dict samples thành EyeRecognitionSample objects
+        samples = []
+        print("Starting sample conversion...")
+        
+        for i, sample_data in enumerate(samples_data):
+            try:
+                if i % 50 == 0:  # Log every 50 samples
+                    print(f"Processing sample {i}/{len(samples_data)}")
+                
+                # Simple conversion - skip complex nested objects for now
+                sample_simple = {
+                    "id": sample_data.get("id"),
+                    "eyeImageLink": sample_data.get("eyeImageLink"),
+                    "label": sample_data.get("label"),
+                    "isActive": sample_data.get("isActive", True),
+                    "captureDate": sample_data.get("captureDate"),
+                    "member": None  # Tạm thời skip member object để test
+                }
+                
+                sample = EyeRecognitionSample(**sample_simple)
+                samples.append(sample)
+                
+            except Exception as e:
+                print(f"ERROR processing sample {i}: {e}")
+                print(f"Sample data: {sample_data}")
+                raise e
+        
+        print(f"Sample conversion completed: {len(samples)} samples")
+        
+        # Khởi tạo ImageDownloader
+        print("Initializing ImageDownloader...")
+        image_downloader = ImageDownloader()
+        
+        # Lấy image URLs từ samples
+        image_urls = [sample.eyeImageLink for sample in samples]
+        labels = [sample.label for sample in samples]
+        
+        print(f"Starting image download and organization: {len(image_urls)} images")
+        # Tải ảnh và organize theo labels
+        organized_images = image_downloader.download_and_organize_by_labels(image_urls, labels)
+        print(f"Image organization completed: {len(organized_images)} labels")
+        
+        # Convert organized dict thành flat lists cho training
+        all_image_paths = []
+        all_labels = []
+        for label, paths in organized_images.items():
+            all_image_paths.extend(paths)
+            all_labels.extend([label] * len(paths))
+        
+        print(f"Prepared for training: {len(all_image_paths)} images, {len(set(all_labels))} unique labels")
+        
+        # Rest of the training code...
+        print("Creating model object...")
         iris_model = EyeRecognitionModel()
-        iris_model.eyeModelName = model_name
-        iris_model.eyeRecognitionSampleTrain = []
+        iris_model.eyeModelName = modelName
         iris_model.createDate = datetime.now()
         iris_model.epochs = epochs
-        iris_model.batchSize = batch_size
-        iris_model.learningRate = learning_rate
-        iris_model.imageSize = image_size
+        iris_model.batchSize = batchSize
+        iris_model.learningRate = learningRate
+        iris_model.imageSize = imageSize
         
         train_transform = transforms.Compose([
             transforms.ToPILImage(),
@@ -164,7 +126,7 @@ async def train_model(
         
         
         train_paths, val_paths, train_labels, val_labels = train_test_split(
-            image_paths, labels, test_size=0.2, stratify= labels, random_state=42
+            all_image_paths, all_labels, test_size=0.2, stratify= all_labels, random_state=42
         )
         
         print(f"Train: {len(train_paths)}")
@@ -176,7 +138,7 @@ async def train_model(
         train_loader = DataLoader(train_dataset, batch_size= iris_model.batchSize, shuffle = True, num_workers=0)
         val_loader = DataLoader(val_dataset, batch_size = iris_model.batchSize, shuffle = True, num_workers = 0 )
 
-        num_classes = len(set(labels))
+        num_classes = len(set(all_labels))
         
         model = models.resnet50(weights = ResNet50_Weights.IMAGENET1K_V1)
         for param in model.parameters():
@@ -197,58 +159,53 @@ async def train_model(
         
         iris_model.accuracy = val_accuracy
         iris_model.trainingTime = training_time
-        iris_model.f1_score = f1_score
+        iris_model.f1Score = f1_score
         iris_model.precision = precision
         
         iris_model.mappingLabel = " ".join(map(str, {idx:label for label, idx in train_dataset.label_to_idx.items()}))
         
-        temp_id = str(uuid.uuid4())
-        temp_model_path = f"{temp_id}_{iris_model.eyeModelName}.pt"
-        MODEL_CACHE[temp_model_path] = {
-            "iris_model": iris_model,
-            "eye_recognition_samples": eye_recognition_samples,
-            "model": model
-        }
-        
-        iris_model.modelLink = temp_model_path
-        
-        return iris_model
-    
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Lỗi huấn luyện: {e}"
-        )
- 
- 
-@router.post("/save-trained-model/{temp_id}", response_model=EyeRecognitionModel)
-async def save_trained_model(temp_id: str):
-    try:
-        if temp_id not in MODEL_CACHE:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Không tìm thấy mô hình tạm thời"
-            )
-        
-        cached_data = MODEL_CACHE[temp_id]
-        iris_model = cached_data["iris_model"]
-        model = cached_data.get("model") 
-        
-        final_model_path = f"models/{iris_model.eyeModelName}.pt"
-        iris_model.modelLink = final_model_path
+        # Lưu model file với UUID
+        print("Saving model file...")
+        os.makedirs("models", exist_ok=True)  # Tạo thư mục nếu chưa có
+        model_id = str(uuid.uuid4())
+        final_model_path = f"models/{model_id}.pt"
         torch.save(model.state_dict(), final_model_path)
+        iris_model.modelLink = model_id  # Chỉ lưu UUID
+        print(f"Model file saved: {final_model_path}")
         
-        model_result = await EyeRecognitionModelDAO.create(iris_model)
-        del MODEL_CACHE[temp_id]
+        # Tạo histories từ samples đã train
+        print("Creating training history records...")
+        histories = []
+        for sample in samples:
+            history = EyeRecognitionSampleHistory(
+                eyeRecognitionSample=sample,
+                notes=f"Trained with model {modelName} - Label: {sample.label}"
+            )
+            histories.append(history)
         
-        return model_result
+        iris_model.eyeRecognitionSampleHistory = histories
+        print(f"Created {len(histories)} history records")
+        
+        # Set model ID 
+        iris_model.id = model_id
+        
+        # Cleanup temp files
+        image_downloader.cleanup_temp_files(all_image_paths)
+        print("Đã xóa các file ảnh tạm thời")
+        
+        print("Training completed successfully! Ready for user confirmation.")
+        return iris_model  # Return model cho frontend để user confirm
     
     except Exception as e:
+        print(f"=== TRAIN MODEL ERROR ===")
+        print(f"ERROR: {str(e)}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Lỗi lưu mô hình: {e}"
+            detail=f"Training error: {e}"
         )
-  
+ 
 def train_model_process( model, train_loader, val_loader, epochs, learning_rate):
     criterion =  nn.CrossEntropyLoss() 
     optimizer = optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr = learning_rate)

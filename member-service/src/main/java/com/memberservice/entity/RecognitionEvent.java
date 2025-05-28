@@ -4,8 +4,9 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
+import org.hibernate.annotations.GenericGenerator;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Table(name = "tblRecognitionEvent")
@@ -15,17 +16,19 @@ import java.time.LocalDateTime;
 public class RecognitionEvent {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+    @GeneratedValue(generator = "UUID")
+    @GenericGenerator(name = "UUID", strategy = "org.hibernate.id.UUIDGenerator")
+    @Column(name = "id", updatable = false, nullable = false)
+    private UUID id;
 
     @Column(name = "imageLink", nullable = false)
     private String imageLink;
 
     @Column(name = "recognitionModelId", nullable = false)
-    private Integer recognitionModelId;
+    private UUID recognitionModelId;
 
     @Column(name = "eyeDetectionModelId", nullable = false)
-    private Integer eyeDetectionModelId;
+    private UUID eyeDetectionModelId;
 
     @Column(name = "cameraName", nullable = false)
     private String cameraName;

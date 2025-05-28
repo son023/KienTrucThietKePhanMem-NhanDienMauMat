@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class MemberService {
@@ -22,7 +23,7 @@ public class MemberService {
         return memberRepository.findAll();
     }
 
-    public Optional<Member> getMemberById(Integer id) {
+    public Optional<Member> getMemberById(UUID id) {
         return memberRepository.findById(id);
     }
 

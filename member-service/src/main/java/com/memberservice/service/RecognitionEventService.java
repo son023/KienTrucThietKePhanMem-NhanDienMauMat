@@ -22,7 +22,7 @@ public class RecognitionEventService {
     }
 
     public List<RecognitionEvent> getEventsByModelIdAndTimeRange(
-            Integer modelId, LocalDateTime startDate, LocalDateTime endDate) {
+            UUID modelId, LocalDateTime startDate, LocalDateTime endDate) {
         return recognitionEventRepository.findByRecognitionModelIdAndTimeVerifyBetween(
                 modelId, startDate, endDate);
     }

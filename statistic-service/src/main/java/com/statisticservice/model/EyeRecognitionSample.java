@@ -6,7 +6,7 @@ public class EyeRecognitionSample {
     private int id;
     private int memberId;
     private String eyeImageLink;
-    private int label;
+    private String label;
     private boolean isActive;
     private Date captureDate;
 
@@ -34,11 +34,11 @@ public class EyeRecognitionSample {
         this.eyeImageLink = eyeImageLink;
     }
 
-    public int getLabel() {
+    public String getLabel() {
         return label;
     }
 
-    public void setLabel(int label) {
+    public void setLabel(String label) {
         this.label = label;
     }
 
