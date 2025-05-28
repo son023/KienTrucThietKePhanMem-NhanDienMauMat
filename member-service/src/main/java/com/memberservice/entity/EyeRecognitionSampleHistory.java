@@ -1,5 +1,6 @@
 package com.memberservice.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -23,12 +24,12 @@ public class EyeRecognitionSampleHistory {
     @Column(name = "notes")
     private String notes;
 
-    // Relationships
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "modelId")
+    @JsonIgnore
     private EyeRecognitionModel model;
 
-    @ManyToOne(fetch = FetchType.EAGER) // Eager để luôn load sample details
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "sampleId")
     private EyeRecognitionSample eyeRecognitionSample;
 } 
