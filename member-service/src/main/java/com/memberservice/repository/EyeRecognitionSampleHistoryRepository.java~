@@ -1,0 +1,15 @@
+package com.memberservice.repository;
+
+import com.memberservice.entity.EyeRecognitionSampleHistory;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+import java.util.UUID;
+
+@Repository
+public interface EyeRecognitionSampleHistoryRepository extends JpaRepository<EyeRecognitionSampleHistory, UUID> {
+    
+    List<EyeRecognitionSampleHistory> findByModelId(UUID modelId);
+    
+} 

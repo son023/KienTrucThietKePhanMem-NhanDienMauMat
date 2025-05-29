@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException, status, Body
+from typing import Optional, Union, List
 import os
 import torch
 import torch.nn as nn
@@ -31,55 +32,18 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
 @router.post("/train", response_model = EyeRecognitionModel)
-async def train_model(request_data: dict = Body(...)):
+async def train_model(
+    samples: List[EyeRecognitionSample] = Body(...),
+    modelName: str = Body(...),
+    epochs: Optional[int] = Body(...),
+    batchSize: Optional[int] = Body(...),
+    learningRate: Optional[float] = Body(...),
+    imageSize: Optional[int] = Body(...),
+):
     try:
-        print("=== TRAIN MODEL START ===")
-        print(f"Request data keys: {request_data.keys()}")
-        
-        # Extract parameters từ request
-        samples_data = request_data.get("samples", [])
-        modelName = request_data.get("modelName", "")
-        epochs = request_data.get("epochs", 20)
-        batchSize = request_data.get("batchSize", 32)
-        learningRate = request_data.get("learningRate", 0.001)
-        imageSize = request_data.get("imageSize", 224)
-        
-        print(f"Parameters extracted - Model: {modelName}, Samples: {len(samples_data)}")
-        
-        # Convert dict samples thành EyeRecognitionSample objects
-        samples = []
-        print("Starting sample conversion...")
-        
-        for i, sample_data in enumerate(samples_data):
-            try:
-                if i % 50 == 0:  # Log every 50 samples
-                    print(f"Processing sample {i}/{len(samples_data)}")
-                
-                # Simple conversion - skip complex nested objects for now
-                sample_simple = {
-                    "id": sample_data.get("id"),
-                    "eyeImageLink": sample_data.get("eyeImageLink"),
-                    "label": sample_data.get("label"),
-                    "isActive": sample_data.get("isActive", True),
-                    "captureDate": sample_data.get("captureDate"),
-                    "member": None  # Tạm thời skip member object để test
-                }
-                
-                sample = EyeRecognitionSample(**sample_simple)
-                samples.append(sample)
-                
-            except Exception as e:
-                print(f"ERROR processing sample {i}: {e}")
-                print(f"Sample data: {sample_data}")
-                raise e
-        
-        print(f"Sample conversion completed: {len(samples)} samples")
-        
-        # Khởi tạo ImageDownloader
         print("Initializing ImageDownloader...")
         image_downloader = ImageDownloader()
         
-        # Lấy image URLs từ samples
         image_urls = [sample.eyeImageLink for sample in samples]
         labels = [sample.label for sample in samples]
         

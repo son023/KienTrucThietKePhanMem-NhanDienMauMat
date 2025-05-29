@@ -25,39 +25,14 @@ import java.util.stream.Collectors;
 public class EyeRecognitionController {
 
     @Autowired
-    private EyeRecognitionModelRepository modelRepository;
-
-    @Autowired
-    private EyeRecognitionSampleRepository sampleRepository;
-
-    @Autowired
-    private EyeRecognitionSampleHistoryRepository historyRepository;
-
-    @Autowired
-    private MemberRepository memberRepository;
-
-    @Autowired
     private EyeRecognitionTrainingService trainingService;
 
-    // TEST endpoint để debug
-    @PostMapping("/test-request")
-    public ResponseEntity<?> testRequest(@RequestBody Map<String, Object> requestBody) {
-        System.out.println("TEST: Request body type and content: " + requestBody.getClass() + " = " + requestBody);
-        
-        for (Map.Entry<String, Object> entry : requestBody.entrySet()) {
-            System.out.println("  " + entry.getKey() + " (" + entry.getValue().getClass() + ") = " + entry.getValue());
-        }
-        
-        return ResponseEntity.ok("Request received successfully");
-    }
 
-    // Train model ONLY - không save vào DB
     @PostMapping("/train-model")
     public ResponseEntity<?> trainModel(@RequestBody Map<String, Object> requestBody) {
         try {
             System.out.println("DEBUG: Request body received: " + requestBody);
-            
-            // Parse request parameters
+
             @SuppressWarnings("unchecked")
             List<String> memberIdStrs = (List<String>) requestBody.get("memberIds");
             if (memberIdStrs == null || memberIdStrs.isEmpty()) {
@@ -80,8 +55,7 @@ public class EyeRecognitionController {
             
             System.out.println("DEBUG: Parsed parameters - memberIds: " + memberIds.size() + 
                              ", modelName: " + modelName + ", epochs: " + epochs);
-            
-            // CHỈ TRAIN, KHÔNG SAVE
+
             EyeRecognitionModel trainedModel = trainingService.trainModelOnly(
                 memberIds, modelName, epochs, batchSize, learningRate, imageSize
             );
@@ -95,16 +69,12 @@ public class EyeRecognitionController {
         }
     }
 
-    // Lấy members có ít nhất minSamples mẫu mắt
     @GetMapping("/members-with-samples")
     public ResponseEntity<List<Member>> getMembersWithMinSamples(@RequestParam int minSamples) {
         List<Member> members = trainingService.getMembersWithMinSamples(2);
         return ResponseEntity.ok(members);
     }
 
-    // REMOVED: Endpoint này thừa, member-service tự lấy samples
-
-    // Lưu model đã train kèm history (sau khi user confirm)
     @PostMapping("/save-trained-model")
     public ResponseEntity<EyeRecognitionModel> saveTrainedModel(@RequestBody EyeRecognitionModel model) {
         try {
@@ -113,40 +83,5 @@ public class EyeRecognitionController {
         } catch (Exception e) {
             return ResponseEntity.badRequest().build();
         }
-    }
-
-    // Lấy tất cả models
-    @GetMapping("/models")
-    public ResponseEntity<List<EyeRecognitionModel>> getAllModels(@RequestParam(defaultValue = "true") boolean activeOnly) {
-        List<EyeRecognitionModel> models;
-        if (activeOnly) {
-            models = modelRepository.findByIsActiveTrueOrderByCreateDateDesc();
-        } else {
-            models = modelRepository.findAllByOrderByCreateDateDesc();
-        }
-        return ResponseEntity.ok(models);
-    }
-
-    // Lấy model theo ID
-    @GetMapping("/models/{modelId}")
-    public ResponseEntity<EyeRecognitionModel> getModelById(@PathVariable UUID modelId) {
-        return modelRepository.findById(modelId)
-                .map(model -> ResponseEntity.ok(model))
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    // Lấy model theo ID kèm histories và samples
-    @GetMapping("/models/{modelId}/with-histories")
-    public ResponseEntity<EyeRecognitionModel> getModelWithHistories(@PathVariable UUID modelId) {
-        return modelRepository.findByIdWithHistories(modelId)
-                .map(model -> ResponseEntity.ok(model))
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    // Lấy history của model
-    @GetMapping("/models/{modelId}/history")
-    public ResponseEntity<List<EyeRecognitionSampleHistory>> getModelHistory(@PathVariable UUID modelId) {
-        List<EyeRecognitionSampleHistory> history = historyRepository.findByModelId(modelId);
-        return ResponseEntity.ok(history);
     }
 } 
