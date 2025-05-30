@@ -65,7 +65,6 @@ public class EyeRecognitionModel {
     @Column(name = "modeltype")
     private String modelType;
 
-    // Relationship với history (fetch lazy để tránh N+1 query)
     @OneToMany(mappedBy = "model", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JsonProperty("eyeRecognitionSampleHistory")
     private List<EyeRecognitionSampleHistory> histories;

@@ -30,4 +30,8 @@ public class MemberService {
     public Optional<Member> getMemberByUsername(String username) {
         return memberRepository.findByUsername(username);
     }
+
+    public List<Member> getMembersWithMinSamples(int minSamples) {
+        return memberRepository.findMembersWithMinimumSamples(minSamples);
+    }
 }

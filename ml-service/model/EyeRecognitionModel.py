@@ -2,6 +2,7 @@ from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
 from .EyeRecognitionSampleHistory import EyeRecognitionSampleHistory
+from .EyeRecognitionSample import EyeRecognitionSample
 import uuid
 
 class EyeRecognitionModel(BaseModel):
@@ -24,3 +25,8 @@ class EyeRecognitionModel(BaseModel):
    
     class Config:
         from_attributes = True
+    def get_samples(self) -> list[EyeRecognitionSample]:
+        """Lấy danh sách các sample từ history."""
+        if not self.eyeRecognitionSampleHistory:
+            return []
+        return [history.eyeRecognitionSample for history in self.eyeRecognitionSampleHistory if history.eyeRecognitionSample]

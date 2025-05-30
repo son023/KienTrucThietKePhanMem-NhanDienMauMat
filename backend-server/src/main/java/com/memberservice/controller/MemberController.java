@@ -38,4 +38,11 @@ public class MemberController {
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
+
+    @GetMapping("/with-samples")
+    public ResponseEntity<List<Member>> getMembersWithMinSamples(
+            @RequestParam(defaultValue = "2") int minSamples) {
+        List<Member> members = memberService.getMembersWithMinSamples(minSamples);
+        return ResponseEntity.ok(members);
+    }
 }

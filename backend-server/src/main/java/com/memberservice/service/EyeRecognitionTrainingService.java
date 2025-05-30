@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -30,11 +31,9 @@ public class EyeRecognitionTrainingService {
     
     @Autowired
     private EyeRecognitionSampleHistoryRepository historyRepository;
-    
-    @Autowired
-    private MemberRepository memberRepository;
 
-    public EyeRecognitionModel trainModelOnly(List<UUID> memberIds,
+
+    public EyeRecognitionModel trainModel(List<UUID> memberIds,
                                              String modelName,
                                              String modelType,
                                              Integer epochs,
@@ -42,15 +41,17 @@ public class EyeRecognitionTrainingService {
                                              Double learningRate,
                                              Integer imageSize) {
         try {
-            List<EyeRecognitionSample> samples = sampleRepository.findByMember_IdInAndIsActiveTrueWithMember(memberIds);
+            List<EyeRecognitionSample> samples = sampleRepository.findByMember_IdInAndIsActiveTrue(memberIds);
             
             if (samples.isEmpty()) {
                 throw new RuntimeException("Không tìm thấy mẫu mắt cho các member IDs đã chọn");
             }
-
-            EyeRecognitionModel trainedModel = mlService.trainModel(
-                samples, modelName, modelType, epochs, batchSize, learningRate, imageSize
-            );
+            EyeRecognitionModel trainedModel = new EyeRecognitionModel(UUID.randomUUID(),"", modelName, 0.0, 0.0, 0.0, false, epochs, learningRate, imageSize,batchSize, "",0, null, modelType, new ArrayList<>());
+            for(EyeRecognitionSample sample : samples) {
+                EyeRecognitionSampleHistory history = new EyeRecognitionSampleHistory(UUID.randomUUID(), "",trainedModel, sample);
+                trainedModel.getHistories().add(history);
+            }
+            trainedModel = mlService.trainModel(trainedModel);
             
             if (trainedModel == null) {
                 throw new RuntimeException("ML service trả về null");
@@ -67,9 +68,7 @@ public class EyeRecognitionTrainingService {
     public EyeRecognitionModel saveTrainedModel(EyeRecognitionModel trainedModel) {
         try {
             trainedModel.setIsActive(true);
-
             List<EyeRecognitionSampleHistory> historiesToSave = trainedModel.getHistories();
-
             trainedModel.setHistories(null);
             EyeRecognitionModel savedModel = modelRepository.save(trainedModel);
 
@@ -110,9 +109,5 @@ public class EyeRecognitionTrainingService {
             e.printStackTrace();
             throw new RuntimeException("Lỗi khi lưu model: " + e.getMessage(), e);
         }
-    }
-    public List<Member> getMembersWithMinSamples(int minSamples) {
-        List<UUID> memberIds = sampleRepository.findMemberIdsWithMinimumSamples(minSamples);
-        return memberRepository.findAllById(memberIds);
     }
 } 

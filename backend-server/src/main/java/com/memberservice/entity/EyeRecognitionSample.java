@@ -41,14 +41,13 @@ public class EyeRecognitionSample {
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime captureDate;
 
-    // Chỉ serialize member object với các field cần thiết
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "memberId")
     @JsonIgnoreProperties({
             "hibernateLazyInitializer",
             "handler",
-            "password",              // Bỏ qua password
-            "eyeRecognitionSamples", // Tránh circular reference
+            "password",
+            "eyeRecognitionSamples",
             "createdAt",
             "updatedAt"
     })

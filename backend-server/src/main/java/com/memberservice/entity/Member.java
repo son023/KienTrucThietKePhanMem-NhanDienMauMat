@@ -26,7 +26,7 @@ public class Member {
     private String username;
 
     @Column(name = "password", nullable = false)
-    @JsonIgnore  // Không serialize password
+    @JsonIgnore
     private String password;
 
     @Column(name = "email", unique = true, nullable = false)

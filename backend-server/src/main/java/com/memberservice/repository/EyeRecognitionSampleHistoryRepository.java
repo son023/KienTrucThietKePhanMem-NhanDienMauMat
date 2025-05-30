@@ -9,7 +9,5 @@ import java.util.UUID;
 
 @Repository
 public interface EyeRecognitionSampleHistoryRepository extends JpaRepository<EyeRecognitionSampleHistory, UUID> {
-    
-    List<EyeRecognitionSampleHistory> findByModelId(UUID modelId);
 
 } 

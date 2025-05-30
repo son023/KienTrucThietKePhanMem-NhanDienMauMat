@@ -23,14 +23,13 @@ public class EyeRecognitionController {
 
 
     @PostMapping("/train-model")
-    public ResponseEntity<?> trainModel(@RequestBody Map<String, Object> requestBody) {
+    public ResponseEntity<EyeRecognitionModel> trainModel(@RequestBody Map<String, Object> requestBody) {
         try {
             System.out.println("DEBUG: Request body received: " + requestBody);
 
-            @SuppressWarnings("unchecked")
             List<String> memberIdStrs = (List<String>) requestBody.get("memberIds");
             if (memberIdStrs == null || memberIdStrs.isEmpty()) {
-                return ResponseEntity.badRequest().body("memberIds không được để trống");
+                throw new RuntimeException("memberIds thiếu trong request body");
             }
             
             List<UUID> memberIds = memberIdStrs.stream()
@@ -39,7 +38,7 @@ public class EyeRecognitionController {
             
             String modelName = (String) requestBody.get("modelName");
             if (modelName == null || modelName.trim().isEmpty()) {
-                return ResponseEntity.badRequest().body("modelName không được để trống");
+                throw new RuntimeException("modelName không được để trống");
             }
             
             String modelType = (String) requestBody.getOrDefault("modelType", "resnet");
@@ -47,11 +46,8 @@ public class EyeRecognitionController {
             Integer batchSize = (Integer) requestBody.get("batchSize");
             Double learningRate = (Double) requestBody.get("learningRate");
             Integer imageSize = (Integer) requestBody.get("imageSize");
-            
-            System.out.println("DEBUG: Parsed parameters - memberIds: " + memberIds.size() + 
-                             ", modelName: " + modelName + ", modelType: " + modelType + ", epochs: " + epochs);
 
-            EyeRecognitionModel trainedModel = trainingService.trainModelOnly(
+            EyeRecognitionModel trainedModel = trainingService.trainModel(
                 memberIds, modelName, modelType, epochs, batchSize, learningRate, imageSize
             );
             
@@ -60,14 +56,8 @@ public class EyeRecognitionController {
         } catch (Exception e) {
             System.err.println("ERROR in trainModel: " + e.getMessage());
             e.printStackTrace();
-            return ResponseEntity.badRequest().body("Lỗi server: " + e.getMessage());
+            throw new RuntimeException("Lỗi server: " + e.getMessage());
         }
-    }
-
-    @GetMapping("/members-with-samples")
-    public ResponseEntity<List<Member>> getMembersWithMinSamples(@RequestParam int minSamples) {
-        List<Member> members = trainingService.getMembersWithMinSamples(2);
-        return ResponseEntity.ok(members);
     }
 
     @PostMapping("/save-trained-model")

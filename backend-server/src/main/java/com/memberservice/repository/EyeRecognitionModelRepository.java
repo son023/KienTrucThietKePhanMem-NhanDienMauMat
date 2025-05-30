@@ -14,9 +14,4 @@ import java.util.UUID;
 public interface EyeRecognitionModelRepository extends JpaRepository<EyeRecognitionModel, UUID> {
     
     List<EyeRecognitionModel> findByIsActiveTrueOrderByCreateDateDesc();
-    
-    List<EyeRecognitionModel> findAllByOrderByCreateDateDesc();
-    
-    @Query("SELECT m FROM EyeRecognitionModel m LEFT JOIN FETCH m.histories h LEFT JOIN FETCH h.eyeRecognitionSample WHERE m.id = :modelId")
-    Optional<EyeRecognitionModel> findByIdWithHistories(@Param("modelId") UUID modelId);
 } 

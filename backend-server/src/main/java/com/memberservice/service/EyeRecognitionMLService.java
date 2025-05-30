@@ -11,11 +11,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
 @Service
 public class EyeRecognitionMLService {
 
@@ -25,37 +20,21 @@ public class EyeRecognitionMLService {
     @Value("${eye-recognition.service.url:http://localhost:8000}")
     private String eyeRecognitionServiceUrl;
 
-    public EyeRecognitionModel trainModel(List<EyeRecognitionSample> samples,
-                                        String modelName,
-                                        String modelType,
-                                        Integer epochs,
-                                        Integer batchSize,
-                                        Double learningRate,
-                                        Integer imageSize) {
+    public EyeRecognitionModel trainModel(EyeRecognitionModel trainedModel) {
         try {
             String url = eyeRecognitionServiceUrl + "/api/eye-recognition-model/train";
-
-            Map<String, Object> requestBody = new HashMap<>();
-            requestBody.put("samples", samples);
-            requestBody.put("modelName", modelName);
-            requestBody.put("modelType", modelType != null ? modelType : "resnet");
-            requestBody.put("epochs", epochs);
-            requestBody.put("batchSize", batchSize);
-            requestBody.put("learningRate", learningRate);
-            requestBody.put("imageSize", imageSize);
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
 
-            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
-
+            HttpEntity<EyeRecognitionModel> request = new HttpEntity<>(trainedModel, headers);
             ResponseEntity<EyeRecognitionModel> response = restTemplate.postForEntity(
-                url, entity, EyeRecognitionModel.class
+                url, request, EyeRecognitionModel.class
             );
 
-            EyeRecognitionModel result = response.getBody();
+            EyeRecognitionModel eyeRecognitionModel = response.getBody();
 
-            return result;
+            return eyeRecognitionModel;
 
         } catch (Exception e) {
             throw new RuntimeException("Lỗi khi gọi ML service: " + e.getMessage(), e);

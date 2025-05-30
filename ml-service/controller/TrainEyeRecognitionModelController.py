@@ -41,38 +41,32 @@ STRATEGIES = {
 
 @router.post("/train", response_model = EyeRecognitionModel)
 async def train_model(
-    samples: List[EyeRecognitionSample] = Body(...),
-    modelName: str = Body(...),
-    modelType: str = Body(default="resnet"),  # Đổi từ strategy thành modelType
-    epochs: Optional[int] = Body(...),
-    batchSize: Optional[int] = Body(...),
-    learningRate: Optional[float] = Body(...),
-    imageSize: Optional[int] = Body(...),
+    eyeRecognitionModel: EyeRecognitionModel = Body(...),
 ):
     try:
-        # Validate model type
+        modelType = eyeRecognitionModel.modelType
+        modelName = eyeRecognitionModel.eyeModelName
+        epochs = eyeRecognitionModel.epochs
+        batchSize = eyeRecognitionModel.batchSize
+        learningRate = eyeRecognitionModel.learningRate
+        imageSize = eyeRecognitionModel.imageSize
+        samples = eyeRecognitionModel.get_samples()
+
         if modelType not in STRATEGIES:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Invalid model type: {modelType}. Available: {list(STRATEGIES.keys())}"
             )
         
-        # Get strategy (internal implementation detail)
         training_strategy = STRATEGIES[modelType]
-        print(f"Using model type: {training_strategy.get_strategy_name()}")
-        
-        print("Initializing ImageDownloader...")
+       
         image_downloader = ImageDownloader()
         
         image_urls = [sample.eyeImageLink for sample in samples]
         labels = [sample.label for sample in samples]
         
-        print(f"Starting image download and organization: {len(image_urls)} images")
-        # Tải ảnh và organize theo labels
         organized_images = image_downloader.download_and_organize_by_labels(image_urls, labels)
-        print(f"Image organization completed: {len(organized_images)} labels")
         
-        # Convert organized dict thành flat lists cho training
         all_image_paths = []
         all_labels = []
         for label, paths in organized_images.items():
@@ -81,19 +75,10 @@ async def train_model(
         
         print(f"Prepared for training: {len(all_image_paths)} images, {len(set(all_labels))} unique labels")
         
-        # Create model object
-        print("Creating model object...")
-        iris_model = EyeRecognitionModel()
-        iris_model.eyeModelName = f"{modelName}_{training_strategy.get_strategy_name()}"
-        iris_model.createDate = datetime.now()
-        iris_model.epochs = epochs
-        iris_model.batchSize = batchSize
-        iris_model.learningRate = learningRate
-        iris_model.imageSize = imageSize
-        iris_model.modelType = modelType  # Set modelType
-        
-        # Sử dụng strategy để tạo transforms
-        train_transform, val_transform = training_strategy.get_transforms(iris_model.imageSize)
+        eyeRecognitionModel.eyeModelName = f"{modelName}_{training_strategy.get_strategy_name()}"
+        eyeRecognitionModel.createDate = datetime.now()
+
+        train_transform, val_transform = training_strategy.get_transforms(imageSize)
         
         train_paths, val_paths, train_labels, val_labels = train_test_split(
             all_image_paths, all_labels, test_size=0.2, stratify= all_labels, random_state=42
@@ -105,65 +90,47 @@ async def train_model(
         train_dataset = IrisDataSet(train_paths, train_labels, train_transform)
         val_dataset = IrisDataSet(val_paths, val_labels, val_transform )
         
-        train_loader = DataLoader(train_dataset, batch_size= iris_model.batchSize, shuffle = True, num_workers=0)
-        val_loader = DataLoader(val_dataset, batch_size = iris_model.batchSize, shuffle = True, num_workers = 0 )
+        train_loader = DataLoader(train_dataset, batch_size= batchSize, shuffle = True, num_workers=0)
+        val_loader = DataLoader(val_dataset, batch_size = batchSize, shuffle = True, num_workers = 0 )
 
         num_classes = len(set(all_labels))
         
-        # Sử dụng strategy để tạo model
         model = training_strategy.create_model(num_classes)
         model.to(device)
         
-        # Sử dụng strategy để tạo optimizer và criterion
-        optimizer, criterion = training_strategy.get_optimizer_and_criterion(model, iris_model.learningRate)
+        optimizer, criterion = training_strategy.get_optimizer_and_criterion(model, learningRate)
         
         print(f"Bắt đầu huấn luyện mô hình với {training_strategy.get_strategy_name()}")
         model, val_accuracy, training_time, f1_score, precision = train_model_process(
-            model, train_loader, val_loader, iris_model.epochs, optimizer, criterion
+            model, train_loader, val_loader, epochs, optimizer, criterion
         )
         
-        iris_model.accuracy = val_accuracy
-        iris_model.trainingTime = training_time
-        iris_model.f1Score = f1_score
-        iris_model.precision = precision
+        eyeRecognitionModel.accuracy = val_accuracy
+        eyeRecognitionModel.trainingTime = training_time
+        eyeRecognitionModel.f1Score = f1_score
+        eyeRecognitionModel.precision = precision
         
-        # Fixed label mapping - đảo ngược mapping để từ idx -> label
-        idx_to_label = {idx: label for label, idx in train_dataset.label_to_idx.items()}
-        iris_model.mappingLabel = str(idx_to_label)
+        label_to_idx = {label: idx for label, idx in train_dataset.label_to_idx.items()}
+        eyeRecognitionModel.mappingLabel = str(label_to_idx)
         
-        print(f"Label mapping: {iris_model.mappingLabel}")
+        print(f"Label mapping: {eyeRecognitionModel.mappingLabel}")
         
-        # Lưu model file với UUID
         print("Saving model file...")
-        os.makedirs("models", exist_ok=True)  # Tạo thư mục nếu chưa có
-        model_id = str(uuid.uuid4())
-        final_model_path = f"models/{model_id}.pt"
+        os.makedirs("models", exist_ok=True)
+        final_model_path = f"eye_recognition_models/{eyeRecognitionModel.id}.pt"
         torch.save(model.state_dict(), final_model_path)
-        iris_model.modelLink = model_id  # Chỉ lưu UUID
+        eyeRecognitionModel.modelLink = eyeRecognitionModel.id
         print(f"Model file saved: {final_model_path}")
         
-        # Tạo histories từ samples đã train
         print("Creating training history records...")
-        histories = []
-        for sample in samples:
-            history = EyeRecognitionSampleHistory(
-                eyeRecognitionSample=sample,
-                notes=f"Trained with {training_strategy.get_strategy_name()} - Label: {sample.label}"
-            )
-            histories.append(history)
+        for eyeRecognitionSampleHistory in eyeRecognitionModel.eyeRecognitionSampleHistory:
+            eyeRecognitionSampleHistory.notes=f"Trained with {training_strategy.get_strategy_name()} - Label: {eyeRecognitionSampleHistory.eyeRecognitionSample.label}"
         
-        iris_model.eyeRecognitionSampleHistory = histories
-        print(f"Created {len(histories)} history records")
-        
-        # Set model ID 
-        iris_model.id = model_id
-        
-        # Cleanup temp files
         image_downloader.cleanup_temp_files(all_image_paths)
         print("Đã xóa các file ảnh tạm thời")
         
         print("Training completed successfully!")
-        return iris_model
+        return eyeRecognitionModel
     
     except Exception as e:
         print(f"=== TRAIN MODEL ERROR ===")

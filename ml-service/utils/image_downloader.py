@@ -21,13 +21,12 @@ class ImageDownloader:
         """Tải một ảnh với URL và nhãn."""
         url, label = url_label
         
-        # Tạo thư mục nhãn
+      
         label_dir = os.path.join(self.temp_dir, str(label))
         with self.lock:
             os.makedirs(label_dir, exist_ok=True)
         
         try:
-            # Tạo tên file với extension
             filename = f"{uuid.uuid4()}.jpg"
             if '.' in url.split('/')[-1]:
                 ext = url.split('/')[-1].split('.')[-1]
@@ -36,11 +35,9 @@ class ImageDownloader:
             
             local_path = os.path.join(label_dir, filename)
             
-            # Tải ảnh
             response = self.session.get(url, timeout=10)
             response.raise_for_status()
             
-            # Lưu file
             with open(local_path, 'wb') as f:
                 f.write(response.content)
             
@@ -58,7 +55,6 @@ class ImageDownloader:
         print(f"Đang tải {len(image_urls)} ảnh...")
         organized_paths = {}
         
-        # Sử dụng 8 luồng cố định
         with ThreadPoolExecutor(max_workers=8) as executor:
             results = list(executor.map(self.download_single_image, zip(image_urls, labels)))
             
@@ -68,11 +64,9 @@ class ImageDownloader:
                         organized_paths[label] = []
                     organized_paths[label].append(path)
         
-        # Đếm số ảnh cho mỗi nhãn
         for label, paths in organized_paths.items():
             print(f"Nhãn {label}: {len(paths)} ảnh")
         
-        # Lọc các nhãn có ít nhất 3 ảnh
         valid_labels = {label: paths for label, paths in organized_paths.items() if len(paths) >= 3}
         
         if len(valid_labels) < 2:
@@ -83,7 +77,6 @@ class ImageDownloader:
     def cleanup_temp_files(self, file_paths=None):
         """Xóa các file tạm."""
         if file_paths:
-            # Xóa các file cụ thể
             for file_path in file_paths:
                 try:
                     if os.path.exists(file_path):
@@ -91,7 +84,6 @@ class ImageDownloader:
                 except Exception as e:
                     print(f"Không thể xóa file {file_path}: {e}")
         else:
-            # Xóa toàn bộ thư mục tạm
             import shutil
             try:
                 if os.path.exists(self.temp_dir):
